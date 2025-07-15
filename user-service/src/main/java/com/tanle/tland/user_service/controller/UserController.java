@@ -1,6 +1,7 @@
 package com.tanle.tland.user_service.controller;
 
 import com.tanle.tland.user_service.request.UserUpdateRequest;
+import com.tanle.tland.user_service.response.FollowResponse;
 import com.tanle.tland.user_service.response.MessageResponse;
 import com.tanle.tland.user_service.response.PageResponse;
 import com.tanle.tland.user_service.response.UserInfo;
@@ -68,5 +69,39 @@ public class UserController {
         userService.inActiveUser(id);
 
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping(value = "/user/{userId}/unfollow/{followerId}")
+    public ResponseEntity<MessageResponse> unfollowUser(
+            @PathVariable("userId") String id,
+            @PathVariable("followerId") String followerId) {
+        MessageResponse response = userService.unfollowUser(id, followerId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/user/{userId}/follow/{followerId}")
+    public ResponseEntity<FollowResponse> followUser(
+            @PathVariable("userId") String id,
+            @PathVariable("followerId") String followerId) {
+        FollowResponse response = userService.followerUser(id, followerId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/user/{userId}/follower")
+    public ResponseEntity<PageResponse<FollowResponse>> getFollower(
+            @PathVariable("userId") String id,
+            @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
+            @RequestParam(value = "limit", defaultValue = PAGE_SIZE) String limit) {
+        PageResponse<FollowResponse> response = userService.getFollower(id, Integer.parseInt(page), Integer.parseInt(limit));
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/user/{userId}/following")
+    public ResponseEntity<PageResponse<FollowResponse>> getFollowing(
+            @PathVariable("userId") String id,
+            @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
+            @RequestParam(value = "limit", defaultValue = PAGE_SIZE) String limit) {
+        PageResponse<FollowResponse> response = userService.getFollowing(id, Integer.parseInt(page), Integer.parseInt(limit));
+        return ResponseEntity.ok(response);
     }
 }

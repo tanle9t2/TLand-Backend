@@ -5,6 +5,7 @@ import com.tanle.tland.user_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.user_service.mapper.UserMapper;
 import com.tanle.tland.user_service.repo.UserRepo;
 import com.tanle.tland.user_service.request.UserUpdateRequest;
+import com.tanle.tland.user_service.response.FollowResponse;
 import com.tanle.tland.user_service.response.MessageResponse;
 import com.tanle.tland.user_service.response.PageResponse;
 import com.tanle.tland.user_service.response.UserInfo;
@@ -107,6 +108,78 @@ public class UserServiceImpl implements UserService {
                 .status(HttpStatus.OK)
                 .message("Successfully update avatar")
 //                .data(avt)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public FollowResponse followerUser(String userId, String followerId) {
+        //follower id is people that click follow
+        //user id is followed by follower
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found user"));
+        User follower = userRepo.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found follower"));
+
+        userRepo.followUser(followerId, userId);
+
+        return userMapper.convertToFollowResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public MessageResponse unfollowUser(String userId, String followerId) {
+        User user = userRepo.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found user"));
+        User follower = userRepo.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found follower"));
+
+        userRepo.unfollowUser(followerId, userId);
+
+        return MessageResponse.builder()
+                .status(HttpStatus.OK)
+                .message("Successfully unfollow user")
+                .build();
+    }
+
+    @Override
+    public PageResponse<FollowResponse> getFollower(String userId, int page, int limit) {
+        Pageable pageable = PageRequest.of(page, limit);
+        Page<User> pageFollower = userRepo.findFollowerByUserId(userId, pageable);
+
+        List<FollowResponse> data = pageFollower.get()
+                .map(u -> userMapper.convertToFollowResponse(u))
+                .collect(Collectors.toList());
+
+
+        return PageResponse.<FollowResponse>builder()
+                .content(data)
+                .totalPages(pageFollower.getTotalPages())
+                .totalElements(pageFollower.getTotalElements())
+                .page(pageFollower.getNumber())
+                .size(data.size())
+                .last(pageFollower.isLast())
+                .build();
+    }
+
+    @Override
+    public PageResponse<FollowResponse> getFollowing(String userId, int page, int limit) {
+        Pageable pageable = PageRequest.of(page, limit);
+
+        Page<User> pageFollowing = userRepo.findFollowingByUserId(userId, pageable);
+
+        List<FollowResponse> data = pageFollowing.get()
+                .map(u -> userMapper.convertToFollowResponse(u))
+                .collect(Collectors.toList());
+
+
+        return PageResponse.<FollowResponse>builder()
+                .content(data)
+                .totalPages(pageFollowing.getTotalPages())
+                .totalElements(pageFollowing.getTotalElements())
+                .page(pageFollowing.getNumber())
+                .size(data.size())
+                .last(pageFollowing.isLast())
                 .build();
     }
 }

@@ -1,5 +1,8 @@
 package com.tanle.tland.user_service.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +12,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -49,7 +53,7 @@ public class User {
     @JoinColumn(name = "plan_id")
     private Plan plan;
 
-    @ManyToMany
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
             name = "follower",
             joinColumns = @JoinColumn(name = "user_id"),  // this user
@@ -58,6 +62,7 @@ public class User {
     private Set<User> followers;
 
     @ManyToMany(mappedBy = "followers")
+    @JsonIgnore
     private Set<User> following;
 
     @ManyToMany
@@ -66,4 +71,5 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id"))
     private Set<Role> roles;
+
 }
