@@ -8,8 +8,15 @@ server:
       max-request-size: 50MB
     context-path: /asset-service
 
+
 spring:
   data:
     mongodb:
       uri: mongodb://tanle92:090224Tan@localhost:27017/
       database: tland_asset
+
+grpc:
+  client:
+    userServiceGrpc:
+      address: "static://localhost:9091"
+      negotiationType: PLAINTEXT

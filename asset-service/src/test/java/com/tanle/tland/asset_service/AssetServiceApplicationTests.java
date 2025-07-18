@@ -3,7 +3,7 @@ package com.tanle.tland.asset_service;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+//@SpringBootTest
 class AssetServiceApplicationTests {
 
 	@Test

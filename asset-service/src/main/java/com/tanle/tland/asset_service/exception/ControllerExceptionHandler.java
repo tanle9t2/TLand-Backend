@@ -1,5 +1,8 @@
 package com.tanle.tland.asset_service.exception;
 
+import com.tanle.tland.asset_service.response.MessageResponse;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import org.apache.coyote.BadRequestException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +13,38 @@ import java.nio.file.AccessDeniedException;
 
 @RestControllerAdvice
 public class ControllerExceptionHandler {
+    @ExceptionHandler(StatusRuntimeException.class)
+    public ResponseEntity<ExceptionResponse> handleGrpcException(StatusRuntimeException ex) {
+        Status.Code code = ex.getStatus().getCode();
+        String message = ex.getStatus().getDescription();
+        HttpStatus httpStatus;
+
+        switch (code) {
+            case NOT_FOUND:
+                httpStatus = HttpStatus.NOT_FOUND;
+                break;
+            case UNAVAILABLE:
+                httpStatus = HttpStatus.SERVICE_UNAVAILABLE;
+                break;
+            case DEADLINE_EXCEEDED:
+                httpStatus = HttpStatus.GATEWAY_TIMEOUT;
+                break;
+            case INVALID_ARGUMENT:
+                httpStatus = HttpStatus.BAD_REQUEST;
+                break;
+            default:
+                httpStatus = HttpStatus.INTERNAL_SERVER_ERROR;
+        }
+
+        ExceptionResponse response = ExceptionResponse.builder()
+//                .type("/exception/" + exception.getClass().getSimpleName())
+                .title("Resource not found")
+                .detail(message)
+                .timeStamp(System.currentTimeMillis())
+                .status(httpStatus.value())
+                .build();
+        return new ResponseEntity<>(response, httpStatus);
+    }
 
     @ExceptionHandler
     public ResponseEntity<ExceptionResponse> handleResourceNotFound(ResourceNotFoundExeption exception) {
