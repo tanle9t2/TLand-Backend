@@ -1,0 +1,22 @@
+# file: user-service.yml (trong config server)
+server:
+  port: 8082
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 50MB
+    context-path: /asset-service
+
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb://tanle92:090224Tan@localhost:27017/
+      database: tland_asset
+
+grpc:
+  client:
+    userServiceGrpc:
+      address: "static://localhost:9091"
+      negotiationType: PLAINTEXT

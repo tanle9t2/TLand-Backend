@@ -5,6 +5,11 @@ server:
     context-path: /user-service
 
 spring:
+  grpc:
+    server:
+      port: 9091
+      enable-reflection: true
+
   servlet:
     multipart:
       enabled: true
