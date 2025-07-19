@@ -1,0 +1,36 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "com.tanle.tland.upload_service.grpc";
+option java_outer_classname = "UploadServiceProto";
+
+
+service UploadService {
+  rpc Upload(stream FileChunk) returns (UploadResponse);
+  rpc Download(FileRequest) returns (stream FileChunk);
+  rpc Delete(FileRequest) returns (OperationStatus);
+
+}
+
+message FileRequest {
+  string fileName = 1;
+}
+
+message FileChunk {
+  string fileName = 1;
+  bytes content = 2;
+  string contentType = 3;
+}
+
+message UploadResponse {
+  bool success = 1;
+  string message = 2;
+  string url = 3;
+  string type = 4;
+  double duration = 5;
+}
+
+message OperationStatus {
+  bool success = 1;
+  string message = 2;
+}
+

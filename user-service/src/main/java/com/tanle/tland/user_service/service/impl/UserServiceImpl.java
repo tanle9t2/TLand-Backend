@@ -1,5 +1,9 @@
 package com.tanle.tland.user_service.service.impl;
 
+import com.google.protobuf.ByteString;
+import com.tanle.tland.upload_service.grpc.FileChunk;
+import com.tanle.tland.upload_service.grpc.UploadResponse;
+import com.tanle.tland.upload_service.grpc.UploadServiceGrpc;
 import com.tanle.tland.user_service.entity.User;
 import com.tanle.tland.user_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.user_service.mapper.UserMapper;
@@ -10,8 +14,10 @@ import com.tanle.tland.user_service.response.MessageResponse;
 import com.tanle.tland.user_service.response.PageResponse;
 import com.tanle.tland.user_service.response.UserInfo;
 import com.tanle.tland.user_service.service.UserService;
+import io.grpc.stub.StreamObserver;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,9 +25,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,6 +40,10 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
     private final UserRepo userRepo;
     private final UserMapper userMapper;
+
+
+    @GrpcClient("uploadServiceGrpc")
+    private UploadServiceGrpc.UploadServiceStub uploadServiceStub;
 
     @Override
     public UserInfo findUserById(String id) {
@@ -98,17 +113,62 @@ public class UserServiceImpl implements UserService {
     public MessageResponse updateAvt(String userId, MultipartFile file) {
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found user"));
+        final UploadResponse[] responses = new UploadResponse[1];
+        CountDownLatch finishLatch = new CountDownLatch(1);
+        StreamObserver<UploadResponse> uploadResponseStreamObserver = new StreamObserver<UploadResponse>() {
+            @Override
+            public void onNext(UploadResponse uploadResponse) {
+                responses[0] = uploadResponse;
+            }
 
-        //call update service
-//        user.setAvtUrl(avt);
-        userRepo.save(user);
+            @Override
+            public void onError(Throwable throwable) {
+                finishLatch.countDown();
+                throw new RuntimeException(throwable);
+            }
 
+            @Override
+            public void onCompleted() {
+                finishLatch.countDown();
+            }
+        };
+        StreamObserver<FileChunk> requestObserver = uploadServiceStub.upload(uploadResponseStreamObserver);
 
-        return MessageResponse.builder()
-                .status(HttpStatus.OK)
-                .message("Successfully update avatar")
-//                .data(avt)
-                .build();
+        try (InputStream inputStream = file.getInputStream()) {
+            byte[] buffer = new byte[1024 * 1024];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                FileChunk chunk = FileChunk.newBuilder()
+                        .setContent(ByteString.copyFrom(buffer, 0, bytesRead))
+                        .setFileName(file.getOriginalFilename())
+                        .build();
+                requestObserver.onNext(chunk);
+            }
+            requestObserver.onCompleted();
+            if (!finishLatch.await(10, TimeUnit.SECONDS)) {
+                throw new RuntimeException("Upload timed out");
+            }
+
+            if (responses[0] == null) {
+                throw new RuntimeException("No response received from upload service");
+            }
+            user.setAvtUrl(responses[0].getUrl());
+            userRepo.save(user);
+
+            return MessageResponse.builder()
+                    .status(HttpStatus.OK)
+                    .message("Successfully updated avatar")
+                    .data(Map.of(
+                            "avtUrl", user.getAvtUrl()
+                    ))
+                    .build();
+
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to upload file", e);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
     }
 
     @Override

@@ -1,4 +1,12 @@
+aws:
+  accessKey: ${AWS_ACCESS_KEY}
+  secretKey: ${AWS_SECRET_KEY}
+  region: ${AWS_REGION}
+  s3:
+    bucketName: ${S3_BUCKETNAME}
+
 grpc:
   server:
     port: 9092
     enable-reflection: true
+

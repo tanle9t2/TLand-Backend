@@ -10,7 +10,7 @@ import com.tanle.tland.user_service.service.UserService;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
-import org.springframework.grpc.server.service.GrpcService;
+import net.devh.boot.grpc.server.service.GrpcService;
 
 import java.util.Optional;
 
@@ -27,8 +27,8 @@ public class UserServiceGrpcImpl extends UserToAssetServiceGrpc.UserToAssetServi
         if (!userOptional.isPresent()) {
             responseObserver.onError(
                     Status.NOT_FOUND
-                    .withDescription("User not found with ID: " + request.getId())
-                    .asRuntimeException());
+                            .withDescription("User not found with ID: " + request.getId())
+                            .asRuntimeException());
             return;
         }
         User user = userOptional.get();

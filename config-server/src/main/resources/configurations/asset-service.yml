@@ -12,8 +12,8 @@ server:
 spring:
   data:
     mongodb:
-      uri: mongodb://tanle92:090224Tan@localhost:27017/
-      database: tland_asset
+      uri: mongodb://${DB_ASSET_SERVICE_USERNAME}:${DB_ASSET_SERVICE_PASSWORD}@${DB_ASSET_SERVICE_HOST}:${DB_ASSET_SERVICE_PORT}
+      database: ${DB_ASSET_SERVICE_NAME}
 
 grpc:
   client:

@@ -3,7 +3,7 @@ package com.tanle.tland.upload_service;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = "com.tanle.tland.upload_service")
 public class UploadServiceApplication {
 
 	public static void main(String[] args) {
