@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping(value = "/api/v1")
 @RequiredArgsConstructor
@@ -19,6 +21,14 @@ public class AssetController {
     public ResponseEntity<AssetDetailResponse> getAssetById(@PathVariable("assetId") String id) {
         AssetDetailResponse response = assetService.findAssetById(id);
 
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/asset/link-project")
+    public ResponseEntity<MessageResponse> linkAssetToProject(@RequestBody Map<String, String> request) {
+        String projectId = request.get("projectId");
+        String assetId = request.get("assetId");
+        MessageResponse response = assetService.linkAssetToProject(assetId, projectId);
         return ResponseEntity.ok(response);
     }
 

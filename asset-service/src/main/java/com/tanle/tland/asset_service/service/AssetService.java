@@ -8,5 +8,7 @@ import org.apache.logging.log4j.message.Message;
 public interface AssetService {
     AssetDetailResponse findAssetById(String id);
 
+    MessageResponse linkAssetToProject(String assetId, String projectId);
+
     MessageResponse createAsset(AssetCreateRequest createRequest);
 }

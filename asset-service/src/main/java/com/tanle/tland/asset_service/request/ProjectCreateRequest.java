@@ -1,29 +1,22 @@
-package com.tanle.tland.asset_service.entity;
+package com.tanle.tland.asset_service.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
-import java.util.Set;
 
-@Document(collection = "project")
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Project {
-    @Id
-    private String id;
+@Data
+public class ProjectCreateRequest {
+
     private String name;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private LocalDateTime openSale;
     private String description;
     private String investorId;
-
-    private Set<String> assetIds;
 }

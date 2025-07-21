@@ -12,8 +12,13 @@ server:
 spring:
   data:
     mongodb:
-      uri: mongodb://${DB_ASSET_SERVICE_USERNAME}:${DB_ASSET_SERVICE_PASSWORD}@${DB_ASSET_SERVICE_HOST}:${DB_ASSET_SERVICE_PORT}
-      database: ${DB_ASSET_SERVICE_NAME}
+      authentication-database: admin
+      database: tland_asset
+      username: tanle92
+      password: 090224Tan
+      host: localhost
+      port: 27017
+
 
 grpc:
   client:
