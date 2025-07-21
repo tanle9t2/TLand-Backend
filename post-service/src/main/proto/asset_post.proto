@@ -13,7 +13,6 @@ message AssetRequest {
   string id = 1;
   string userId = 2;
 }
-
 message CheckExistedResponse {
   string id = 1;
   bool isExisted = 2;
@@ -23,7 +22,6 @@ message AssetResponse {
   string id = 1;
   string name = 2;
   string description = 3;
-
   string province = 4;
   string ward = 5;
   string address = 6;

@@ -34,7 +34,6 @@ public class UploadServiceGrpcImpl extends UploadServiceGrpc.UploadServiceImplBa
 
     @Override
     public StreamObserver<FileChunk> upload(StreamObserver<UploadResponse> responseObserver) {
-
         return new StreamObserver<FileChunk>() {
             private ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
             private String fileName;

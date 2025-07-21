@@ -53,11 +53,6 @@ public class AssetGrpcServiceImpl extends AssetToPostServiceGrpc.AssetToPostServ
                             .asRuntimeException());
 
         Asset asset = optionalAsset.get();
-        if (!asset.getUserId().equals(request.getUserId()))
-            responseObserver.onError(
-                    Status.PERMISSION_DENIED
-                            .withDescription("Don't have permission for this resource")
-                            .asRuntimeException());
 
         List<Content> contentList = asset.getContents().stream()
                 .map(c -> {

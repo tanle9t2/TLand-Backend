@@ -61,6 +61,7 @@ public class AssetServiceImpl implements AssetService {
                 .build());
 
         Asset asset = assetMapper.convertToAsset(createRequest);
+        asset.getContents().forEach(c -> c.generateId());
         asset.setId(UUID.randomUUID().toString());
         assetRepo.save(asset);
         return MessageResponse.builder()

@@ -13,4 +13,5 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
         @JsonSubTypes.Type(value = Video.class, name = "video")
 })
 public interface Content {
+    void generateId();
 }

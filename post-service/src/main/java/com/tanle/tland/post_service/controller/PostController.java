@@ -2,13 +2,11 @@ package com.tanle.tland.post_service.controller;
 
 import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.MessageResponse;
+import com.tanle.tland.post_service.response.PostResponse;
 import com.tanle.tland.post_service.service.PostService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping(value = "/api/v1")
@@ -16,6 +14,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class PostController {
     private final PostService postService;
 
+    @GetMapping("/post/{postId}")
+    public ResponseEntity<PostResponse> getPostByID(@PathVariable("postId") String postId) {
+        PostResponse response = postService.findPostById(postId);
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping("/post")
     public ResponseEntity<MessageResponse> createPost(@RequestBody PostCreateRequest request) {

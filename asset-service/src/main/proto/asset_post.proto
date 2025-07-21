@@ -22,7 +22,6 @@ message AssetResponse {
   string id = 1;
   string name = 2;
   string description = 3;
-
   string province = 4;
   string ward = 5;
   string address = 6;
