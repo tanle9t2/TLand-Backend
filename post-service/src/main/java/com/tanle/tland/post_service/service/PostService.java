@@ -3,7 +3,9 @@ package com.tanle.tland.post_service.service;
 import com.tanle.tland.post_service.entity.Post;
 import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.MessageResponse;
+import com.tanle.tland.post_service.response.PageResponse;
 import com.tanle.tland.post_service.response.PostResponse;
+import org.springframework.data.domain.Page;
 
 import java.util.Map;
 
@@ -17,4 +19,7 @@ public interface PostService {
     MessageResponse acceptPost(String userId, String postId);
 
     PostResponse findPostById(String postId);
+
+
+    PageResponse<PostResponse> findAll(int page, int limit);
 }

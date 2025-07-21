@@ -5,11 +5,13 @@ import com.tanle.tland.post_service.entity.Post;
 import com.tanle.tland.post_service.entity.PostStatus;
 import com.tanle.tland.post_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.post_service.exception.UnauthorizedException;
+import com.tanle.tland.post_service.mapper.AssetMapper;
 import com.tanle.tland.post_service.mapper.PostMapper;
 import com.tanle.tland.post_service.repo.PostRepo;
 import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.AssetDetailResponse;
 import com.tanle.tland.post_service.response.MessageResponse;
+import com.tanle.tland.post_service.response.PageResponse;
 import com.tanle.tland.post_service.response.PostResponse;
 import com.tanle.tland.post_service.service.PostService;
 import com.tanle.tland.user_serivce.grpc.AssetRequest;
@@ -17,10 +19,14 @@ import com.tanle.tland.user_serivce.grpc.AssetResponse;
 import com.tanle.tland.user_serivce.grpc.AssetToPostServiceGrpc;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.client.inject.GrpcClient;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -32,6 +38,7 @@ public class PostServiceImpl implements PostService {
     private AssetToPostServiceGrpc.AssetToPostServiceBlockingStub assetToPostServiceBlockingStub;
     private final PostRepo postRepo;
     private final PostMapper postMapper;
+    private final AssetMapper assetMapper;
 
     @Override
     @Transactional
@@ -117,31 +124,36 @@ public class PostServiceImpl implements PostService {
                 .build());
 
         PostResponse postResponse = postMapper.convertToPostDetailResponse(post);
-        postResponse.setAssetDetail(
-                AssetDetailResponse.builder()
-                        .id(assetResponse.getId())
-                        .dimension(assetResponse.getDimensionList())
-                        .name(assetResponse.getName())
-                        .address(assetResponse.getAddress())
-                        .ward(assetResponse.getWard())
-                        .province(assetResponse.getProvince())
-                        .properties(assetResponse.getPropertiesMap())
-                        .contents(
-                                assetResponse.getContentListList().stream()
-                                        .map(c -> AssetDetailResponse.Content.builder()
-                                                .url(c.getUrl())
-                                                .id(c.getId())
-                                                .name(c.getName())
-                                                .duration(c.getDuration())
-                                                .type(c.getType())
-                                                .build())
-                                        .collect(Collectors.toList())
-                        )
-                        .build()
-        );
-
+        postResponse.setAssetDetail(assetMapper.convertToResponse(assetResponse));
 
         return postResponse;
+    }
+
+    @Override
+    public PageResponse<PostResponse> findAll(int page, int limit) {
+        Pageable pageable = PageRequest.of(page, limit);
+        Page<Post> postPage = postRepo.findAll(pageable);
+
+        List<PostResponse> posts = postPage.stream().
+                map(p -> {
+                    AssetResponse assetResponse = assetToPostServiceBlockingStub.getAssetDetail(AssetRequest.newBuilder()
+                            .setId(p.getAssetId())
+                            .build());
+
+                    PostResponse postResponse = postMapper.convertToPostDetailResponse(p);
+                    postResponse.setAssetDetail(assetMapper.convertToResponse(assetResponse));
+                    return postResponse;
+                })
+                .collect(Collectors.toList());
+
+
+        return PageResponse.<PostResponse>builder()
+                .content(posts)
+                .size(posts.size())
+                .totalPages(postPage.getTotalPages())
+                .totalElements(postPage.getTotalElements())
+                .last(postPage.isLast())
+                .build();
     }
 }
 

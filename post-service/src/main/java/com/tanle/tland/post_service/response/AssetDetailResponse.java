@@ -38,4 +38,5 @@ public class AssetDetailResponse {
         private String type;
         private double duration;
     }
+
 }
