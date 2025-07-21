@@ -1,0 +1,27 @@
+# file: user-service.yml (trong config server)
+server:
+  port: 8083
+  servlet:
+    context-path: /post-service
+
+spring:
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 50MB
+  datasource:
+    url: jdbc:mysql://localhost:3306/tland_postdb
+    username: root
+    password: 090224@Tan
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+
+
+grpc:
+  client:
+    assetService:
+      address: "static://localhost:9093"
+      negotiationType: PLAINTEXT

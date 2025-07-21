@@ -1,0 +1,40 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "com.tanle.tland.user_serivce.grpc";
+option java_outer_classname = "AssetToPostProto";
+
+
+service AssetToPostService {
+  rpc checkExisted(AssetRequest) returns (CheckExistedResponse);
+  rpc getAssetDetail(AssetRequest) returns (AssetResponse);
+}
+
+message AssetRequest {
+  string id = 1;
+  string userId = 2;
+}
+message CheckExistedResponse {
+  string id = 1;
+  bool isExisted = 2;
+}
+
+message AssetResponse {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+
+  string province = 4;
+  string ward = 5;
+  string address = 6;
+  repeated int32 dimension = 7 ;
+  map<string, string> properties = 8;
+  repeated Content contentList = 9;
+}
+
+message Content {
+  string id = 1;
+  string url = 2;
+  string name = 3;
+  double duration = 4;
+  string type = 5;
+}
