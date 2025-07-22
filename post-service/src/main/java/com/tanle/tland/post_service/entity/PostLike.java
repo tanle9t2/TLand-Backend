@@ -9,18 +9,22 @@ import lombok.NoArgsConstructor;
 @Entity
 @Table(name = "post_like")
 @NoArgsConstructor
+@IdClass(PostLikeId.class)
 @AllArgsConstructor
 @Builder
 @Data
 public class PostLike {
 
     @Id
-    private String id;
+    @Column(name = "post_id")
+    private String postId;
 
-    @ManyToOne
-    @MapsId
-    @JoinColumn(name = "id") // 👈 maps to user.id
+    @Id
+    @Column(name = "user_id")
+    private String userId;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "post_id", insertable = false, updatable = false)
     private Post post;
 
-    private String userId;
 }

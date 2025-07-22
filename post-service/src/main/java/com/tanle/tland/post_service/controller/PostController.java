@@ -4,6 +4,7 @@ import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.MessageResponse;
 import com.tanle.tland.post_service.response.PostResponse;
 import com.tanle.tland.post_service.service.PostService;
+import jakarta.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,6 +24,24 @@ public class PostController {
     @PostMapping("/post")
     public ResponseEntity<MessageResponse> createPost(@RequestBody PostCreateRequest request) {
         MessageResponse response = postService.createPost(request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/post/{postId}/like")
+    public ResponseEntity<MessageResponse> likePost(
+            @PathVariable("postId") String postId,
+            @RequestParam("userId") String userId) {
+        MessageResponse response = postService.likePost(userId, postId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/post/{postId}/unlike")
+    public ResponseEntity<MessageResponse> unlikePost(
+            @PathVariable("postId") String postId,
+            @RequestParam("userId") String userId) {
+        MessageResponse response = postService.unlikePost(userId, postId);
 
         return ResponseEntity.ok(response);
     }

@@ -2,6 +2,7 @@ package com.tanle.tland.post_service.service.impl;
 
 
 import com.tanle.tland.post_service.entity.Post;
+import com.tanle.tland.post_service.entity.PostLike;
 import com.tanle.tland.post_service.entity.PostStatus;
 import com.tanle.tland.post_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.post_service.exception.UnauthorizedException;
@@ -111,6 +112,39 @@ public class PostServiceImpl implements PostService {
         return MessageResponse.builder()
                 .message("Successfully accept post")
                 .status(HttpStatus.OK)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public MessageResponse likePost(String userId, String postId) {
+        Post post = postRepo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
+
+        PostLike postLike = PostLike.builder()
+                .postId(postId)
+                .userId(userId)
+                .build();
+
+        post.addLikePost(postLike);
+
+        return MessageResponse.builder()
+                .status(HttpStatus.OK)
+                .message("Successfully like post")
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public MessageResponse unlikePost(String userId, String postId) {
+        Post post = postRepo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
+
+        post.removeLikePost(userId);
+        postRepo.save(post);
+        return MessageResponse.builder()
+                .status(HttpStatus.OK)
+                .message("Successfully like post")
                 .build();
     }
 

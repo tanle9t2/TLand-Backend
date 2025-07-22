@@ -1,5 +1,6 @@
 package com.tanle.tland.post_service.entity;
 
+import com.tanle.tland.post_service.exception.UnauthorizedException;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,7 +8,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "post")
@@ -42,6 +45,28 @@ public class Post {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
     private List<Comment> comments;
 
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostLike> userLike;
+
+    public void addLikePost(PostLike postLike) {
+        if (userLike == null)
+            userLike = new ArrayList<>();
+
+        postLike.setPost(this);
+        userLike.add(postLike);
+    }
+
+    public void removeLikePost(String userId) {
+        if (userLike == null)
+            userLike = new ArrayList<>();
+
+        List<PostLike> postLike = userLike.stream()
+                .filter(p -> p.getUserId().equals(userId))
+                .collect(Collectors.toList());
+        if (postLike.isEmpty())
+            throw new RuntimeException("Something wrong!!");
+
+        userLike.remove(postLike.get(0));
+        postLike.get(0).setPost(null);
+    }
 }

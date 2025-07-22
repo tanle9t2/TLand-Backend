@@ -18,6 +18,10 @@ public interface PostService {
 
     MessageResponse acceptPost(String userId, String postId);
 
+    MessageResponse likePost(String userId, String postId);
+
+    MessageResponse unlikePost(String userId, String postId);
+
     PostResponse findPostById(String postId);
 
     PageResponse<PostResponse> findAll(int page, int limit);
