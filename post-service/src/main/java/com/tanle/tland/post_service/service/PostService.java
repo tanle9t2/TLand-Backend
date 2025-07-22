@@ -1,11 +1,10 @@
 package com.tanle.tland.post_service.service;
 
-import com.tanle.tland.post_service.entity.Post;
 import com.tanle.tland.post_service.request.PostCreateRequest;
+import com.tanle.tland.post_service.response.CommentResponse;
 import com.tanle.tland.post_service.response.MessageResponse;
 import com.tanle.tland.post_service.response.PageResponse;
 import com.tanle.tland.post_service.response.PostResponse;
-import org.springframework.data.domain.Page;
 
 import java.util.Map;
 
@@ -25,4 +24,10 @@ public interface PostService {
     PostResponse findPostById(String postId);
 
     PageResponse<PostResponse> findAll(int page, int limit);
+
+    MessageResponse createComment(String postId, Map<String, String> content);
+
+    MessageResponse deleteComment(String postId, Map<String, String> content);
+
+    PageResponse<CommentResponse> findCommentsByPostId(String postId, int page, int size);
 }

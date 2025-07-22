@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
 
 import java.time.LocalDateTime;
 
@@ -18,11 +19,10 @@ public class Comment {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
-
     private String userId;
     private String content;
+    @CreatedDate
     private LocalDateTime createdAt;
-
     @ManyToOne
     @JoinColumn(name = "post_id")
     private Post post;

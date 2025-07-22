@@ -1,6 +1,7 @@
 package com.tanle.tland.post_service.service.impl;
 
 
+import com.tanle.tland.post_service.entity.Comment;
 import com.tanle.tland.post_service.entity.Post;
 import com.tanle.tland.post_service.entity.PostLike;
 import com.tanle.tland.post_service.entity.PostStatus;
@@ -8,12 +9,10 @@ import com.tanle.tland.post_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.post_service.exception.UnauthorizedException;
 import com.tanle.tland.post_service.mapper.AssetMapper;
 import com.tanle.tland.post_service.mapper.PostMapper;
+import com.tanle.tland.post_service.repo.CommentRepo;
 import com.tanle.tland.post_service.repo.PostRepo;
 import com.tanle.tland.post_service.request.PostCreateRequest;
-import com.tanle.tland.post_service.response.AssetDetailResponse;
-import com.tanle.tland.post_service.response.MessageResponse;
-import com.tanle.tland.post_service.response.PageResponse;
-import com.tanle.tland.post_service.response.PostResponse;
+import com.tanle.tland.post_service.response.*;
 import com.tanle.tland.post_service.service.PostService;
 import com.tanle.tland.user_serivce.grpc.AssetRequest;
 import com.tanle.tland.user_serivce.grpc.AssetResponse;
@@ -23,12 +22,15 @@ import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,8 +40,10 @@ public class PostServiceImpl implements PostService {
     @GrpcClient("assetService")
     private AssetToPostServiceGrpc.AssetToPostServiceBlockingStub assetToPostServiceBlockingStub;
     private final PostRepo postRepo;
+    private final CommentRepo commentRepo;
     private final PostMapper postMapper;
     private final AssetMapper assetMapper;
+
 
     @Override
     @Transactional
@@ -187,6 +191,77 @@ public class PostServiceImpl implements PostService {
                 .totalPages(postPage.getTotalPages())
                 .totalElements(postPage.getTotalElements())
                 .last(postPage.isLast())
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public MessageResponse createComment(String postId, Map<String, String> content) {
+        Post post = postRepo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
+
+        Comment comment = Comment.builder()
+                .userId(content.get("userId"))
+                .createdAt(LocalDateTime.now())
+                .content(content.get("content"))
+                .build();
+
+        post.addComment(comment);
+
+        comment = commentRepo.save(comment);
+        return MessageResponse.builder()
+                .message("Successfully create comment")
+                .data(Map.of(
+                        "id", comment.getId()
+                ))
+                .status(HttpStatus.CREATED)
+                .build();
+    }
+
+    @Override
+    @Transactional
+    public MessageResponse deleteComment(String postId, Map<String, String> content) {
+        Post post = postRepo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
+
+        List<Comment> comments = post.getComments().stream()
+                .filter(c -> c.getId().equals(content.get("commentId")))
+                .collect(Collectors.toList());
+
+        if (comments.isEmpty())
+            throw new ResourceNotFoundExeption("Not found comment");
+
+        Comment comment = comments.get(0);
+
+        if (!comment.getUserId().equals(content.get("userId")))
+            throw new UnauthorizedException("Don't have permission for this resource");
+
+        post.removeComment(comment);
+
+        return MessageResponse.builder()
+                .message("Successfully delete comment")
+                .status(HttpStatus.OK)
+                .build();
+    }
+
+    @Override
+    public PageResponse<CommentResponse> findCommentsByPostId(String postId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Comment> comments = commentRepo.findAllByPostId(postId, pageable);
+        List<CommentResponse> commentResponses = comments.get()
+                .map(c -> CommentResponse.builder()
+                        .id(c.getId())
+                        .content(c.getContent())
+                        .createdAt(c.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+
+        return PageResponse.<CommentResponse>builder()
+                .content(commentResponses)
+                .size(comments.getSize())
+                .last(comments.isLast())
+                .totalElements(comments.getTotalElements())
+                .page(comments.getNumber())
                 .build();
     }
 }

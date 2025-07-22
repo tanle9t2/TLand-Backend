@@ -42,11 +42,27 @@ public class Post {
     private PostStatus status;
 
 
-    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PostLike> userLike;
+
+    public void addComment(Comment comment) {
+        if (comments == null)
+            comments = new ArrayList<>();
+
+        comment.setPost(this);
+        comments.add(comment);
+    }
+
+    public void removeComment(Comment comment) {
+        if (comments == null)
+            comments = new ArrayList<>();
+
+        comments.remove(comment);
+        comment.setPost(null);
+    }
 
     public void addLikePost(PostLike postLike) {
         if (userLike == null)
