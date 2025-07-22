@@ -10,6 +10,9 @@ server:
 
 
 spring:
+  cloud:
+    discovery:
+      enabled: true
   data:
     mongodb:
       authentication-database: admin

@@ -23,5 +23,5 @@ spring:
 grpc:
   client:
     assetService:
-      address: "static://localhost:9093"
+      address: "discovery:///asset-service"
       negotiationType: PLAINTEXT

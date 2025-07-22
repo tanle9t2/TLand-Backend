@@ -20,6 +20,5 @@ public interface PostService {
 
     PostResponse findPostById(String postId);
 
-
     PageResponse<PostResponse> findAll(int page, int limit);
 }
