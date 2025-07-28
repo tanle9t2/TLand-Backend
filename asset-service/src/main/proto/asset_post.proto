@@ -24,6 +24,7 @@ message AssetResponse {
   string description = 3;
   string province = 4;
   string ward = 5;
+  double pricePerSquare=10;
   string address = 6;
   repeated int32 dimension = 7 ;
   map<string, string> properties = 8;

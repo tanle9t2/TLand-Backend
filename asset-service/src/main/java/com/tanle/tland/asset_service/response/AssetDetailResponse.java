@@ -28,5 +28,6 @@ public class AssetDetailResponse {
     private Map<String, String> properties;
     private String projectId;
     private String userId;
+    private double pricePerSquare;
     private List<Content> contents;
 }

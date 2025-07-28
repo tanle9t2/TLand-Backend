@@ -16,6 +16,8 @@ public class PostResponse {
     private String id;
     private String title;
     private String description;
+    private String createdAt;
+    private String type;
     private LocalDateTime lastUpdated;
     private String userId;
     private String status;

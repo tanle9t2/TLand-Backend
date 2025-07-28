@@ -1,5 +1,6 @@
 package com.tanle.tland.post_service.controller;
 
+import com.google.api.Page;
 import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.MessageResponse;
 import com.tanle.tland.post_service.response.PageResponse;
@@ -25,6 +26,15 @@ public class PostController {
         PostResponse response = postService.findPostById(postId);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/posts")
+    public ResponseEntity<PageResponse> getPosts(@RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
+                                                 @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size,
+                                                 @RequestParam(value = "type") String type) {
+        PageResponse response = postService.findAll(Integer.parseInt(page), Integer.parseInt(size),type);
+        return ResponseEntity.ok(response);
+    }
+
 
     @PostMapping("/post")
     public ResponseEntity<MessageResponse> createPost(@RequestBody PostCreateRequest request) {

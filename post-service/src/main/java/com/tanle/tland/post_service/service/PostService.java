@@ -23,7 +23,7 @@ public interface PostService {
 
     PostResponse findPostById(String postId);
 
-    PageResponse<PostResponse> findAll(int page, int limit);
+    PageResponse<PostResponse> findAll(int page, int limit, String type);
 
     MessageResponse createComment(String postId, Map<String, String> content);
 

@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,6 +20,7 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Builder
 @Data
+@EntityListeners(AuditingEntityListener.class)
 public class Post {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -28,6 +31,10 @@ public class Post {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "createdAt")
+    @CreatedDate
+    private LocalDateTime createdAt;
+
     @Column(name = "last_updated")
     private LocalDateTime lastUpdated;
 
@@ -36,6 +43,9 @@ public class Post {
 
     @Column(name = "user_id")
     private String userId;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type")
+    private PostType type;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")

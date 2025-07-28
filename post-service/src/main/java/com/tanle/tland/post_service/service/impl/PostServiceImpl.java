@@ -1,10 +1,7 @@
 package com.tanle.tland.post_service.service.impl;
 
 
-import com.tanle.tland.post_service.entity.Comment;
-import com.tanle.tland.post_service.entity.Post;
-import com.tanle.tland.post_service.entity.PostLike;
-import com.tanle.tland.post_service.entity.PostStatus;
+import com.tanle.tland.post_service.entity.*;
 import com.tanle.tland.post_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.post_service.exception.UnauthorizedException;
 import com.tanle.tland.post_service.mapper.AssetMapper;
@@ -168,9 +165,9 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PageResponse<PostResponse> findAll(int page, int limit) {
-        Pageable pageable = PageRequest.of(page, limit);
-        Page<Post> postPage = postRepo.findAll(pageable);
+    public PageResponse<PostResponse> findAll(int page, int limit, String type) {
+        Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<Post> postPage = postRepo.findAllByType(pageable, PostType.valueOf(type));
 
         List<PostResponse> posts = postPage.stream().
                 map(p -> {
