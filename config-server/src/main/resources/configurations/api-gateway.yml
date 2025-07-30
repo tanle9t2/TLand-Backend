@@ -37,3 +37,6 @@ management:
     web:
       exposure:
         include: health,info,gateway
+app:
+  cors:
+    allowed-origin: http://localhost:5173/
