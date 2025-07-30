@@ -1,12 +1,14 @@
 package com.tanle.tland.asset_service.controller;
 
 import com.tanle.tland.asset_service.request.AssetCreateRequest;
+import com.tanle.tland.asset_service.request.UploadImageRequest;
 import com.tanle.tland.asset_service.response.AssetDetailResponse;
 import com.tanle.tland.asset_service.response.MessageResponse;
 import com.tanle.tland.asset_service.service.AssetService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
 
@@ -35,6 +37,17 @@ public class AssetController {
     @PostMapping("/asset")
     public ResponseEntity<MessageResponse> createAsset(@RequestBody AssetCreateRequest request) {
         MessageResponse response = assetService.createAsset(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/asset/upload")
+    public ResponseEntity<MessageResponse> uploadAssetImage(
+            @RequestParam(value = "assetId", required = false) String id,
+            @RequestParam(value = "file") MultipartFile file) {
+        MessageResponse response = assetService.uploadImage(UploadImageRequest.builder()
+                .assetId(id)
+                .file(file)
+                .build());
         return ResponseEntity.ok(response);
     }
 }
