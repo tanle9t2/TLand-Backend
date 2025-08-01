@@ -1,4 +1,4 @@
-package com.tanle.tland.post_service.response;
+package com.tanle.tland.asset_service.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

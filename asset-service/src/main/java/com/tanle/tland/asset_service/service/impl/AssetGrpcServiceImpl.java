@@ -82,7 +82,6 @@ public class AssetGrpcServiceImpl extends AssetToPostServiceGrpc.AssetToPostServ
                 .addAllContentList(contentList)
                 .setAddress(asset.getAddress())
                 .setName(asset.getName())
-                .setPricePerSquare(asset.getPricePerSquare())
                 .setDescription(asset.getDescription())
                 .setProvince(asset.getProvince())
                 .setWard(asset.getWard())

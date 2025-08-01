@@ -24,21 +24,28 @@ public class Asset {
     private String id;
     private String name;
     private String description;
-    @CreatedDate
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")
-    private LocalDateTime createdAt;
-    private double pricePerSquare;
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
     private String province;
     private String ward;
     private String address;
     private int[] dimension;
     private Map<String, String> properties;
+    private Map<String, String> locationAsset;
+    private String[] otherInfo;
+    private double landArea;
+    private double usableArea;
     private String projectId;
     private String userId;
+    private String categoryId;
+    @Builder.Default
+    private AssetType type = AssetType.DRAFT;
     private List<Content> contents;
 
     public void addContent(Content content) {
         if (contents == null)
             contents = new ArrayList<>();
+
+        contents.add(content);
     }
 }

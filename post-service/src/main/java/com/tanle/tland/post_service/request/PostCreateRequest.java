@@ -1,5 +1,6 @@
 package com.tanle.tland.post_service.request;
 
+import com.tanle.tland.post_service.entity.PostType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,10 +13,9 @@ import java.time.LocalDateTime;
 @Builder
 @Data
 public class PostCreateRequest {
-
     private String title;
     private String description;
-    private LocalDateTime lastUpdated;
     private String assetId;
     private String userId;
+    private String type;
 }

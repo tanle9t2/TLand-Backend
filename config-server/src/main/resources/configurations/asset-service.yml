@@ -28,6 +28,9 @@ grpc:
     userServiceGrpc:
       address: "static://localhost:9091"
       negotiationType: PLAINTEXT
+    uploadServiceGrpc:
+      address: "static://localhost:9092"
+      negotiationType: PLAINTEXT
   server:
     port: 9093
     enable-reflection: true

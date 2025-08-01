@@ -17,12 +17,16 @@ import java.util.Map;
 public class AssetCreateRequest {
     private String id;
     private String name;
-    private String description;
     private LocalDateTime createdAt;
     private String province;
     private String ward;
     private String address;
     private int[] dimension;
+    private String type;
+    private double landArea;
+    private double usableArea;
+    private String categoryId;
+    private String[] otherInfo;
     private Map<String, String> properties;
     private String projectId;
     private String userId;

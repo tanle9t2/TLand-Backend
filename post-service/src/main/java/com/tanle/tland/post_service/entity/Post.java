@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
@@ -36,6 +37,7 @@ public class Post {
     private LocalDateTime createdAt;
 
     @Column(name = "last_updated")
+    @LastModifiedDate
     private LocalDateTime lastUpdated;
 
     @Column(name = "asset_id")

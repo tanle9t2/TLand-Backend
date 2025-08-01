@@ -4,6 +4,7 @@ import com.tanle.tland.upload_service.grpc.FileChunk;
 import com.tanle.tland.upload_service.grpc.UploadResponse;
 import com.tanle.tland.upload_service.grpc.UploadServiceGrpc;
 import com.tanle.tland.upload_service.utils.Helper;
+import com.tanle.tland.upload_service.utils.MediaType;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -81,9 +82,9 @@ public class UploadServiceGrpcImpl extends UploadServiceGrpc.UploadServiceImplBa
                     double duration = 0;
 
                     if (contentType.startsWith("image/")) {
-                        type = "image";
+                        type = String.valueOf(MediaType.IMAGE);
                     } else if (contentType.startsWith("video/")) {
-                        type = "video";
+                        type = String.valueOf(MediaType.VIDEO);
 
                         try {
                             Path tempFile = Files.createTempFile("temp-", fileName);

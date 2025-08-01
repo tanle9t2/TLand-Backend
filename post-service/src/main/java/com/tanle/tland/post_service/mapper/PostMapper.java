@@ -5,7 +5,7 @@ import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.PostResponse;
 import org.mapstruct.Mapper;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring",uses = {AssetMapper.class})
 public interface PostMapper {
 
     Post convertToEntity(PostCreateRequest request);

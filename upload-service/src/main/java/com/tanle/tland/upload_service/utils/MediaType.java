@@ -1,2 +1,5 @@
-package com.tanle.tland.upload_service.utils;public enum MediaType {
+package com.tanle.tland.upload_service.utils;
+
+public enum MediaType {
+    IMAGE,VIDEO
 }

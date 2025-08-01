@@ -1,4 +1,4 @@
-package com.tanle.tland.post_service.utils;
+package com.tanle.tland.asset_service.utils;
 
 public class AppConstant {
     public static final String PAGE_SIZE = "10";

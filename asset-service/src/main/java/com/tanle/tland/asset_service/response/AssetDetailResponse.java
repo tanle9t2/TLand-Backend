@@ -25,9 +25,11 @@ public class AssetDetailResponse {
     private String ward;
     private String address;
     private int[] dimension;
+    private String[] otherInfo;
     private Map<String, String> properties;
     private String projectId;
     private String userId;
     private double pricePerSquare;
     private List<Content> contents;
+    private CategoryResponse category;
 }
