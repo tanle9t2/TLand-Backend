@@ -1,6 +1,5 @@
 package com.tanle.tland.post_service.response;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,20 +7,14 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Data
-public class PostResponse {
+public class PostOverviewResponse {
     private String id;
     private String title;
-    private String description;
-    private String createdAt;
     private double price;
-    private String type;
-    private LocalDateTime lastUpdated;
-    private String userId;
-    private String status;
-    private AssetDetailResponse assetDetail;
-
+    private LocalDateTime createdAt;
+    private String posterUrl;
 }

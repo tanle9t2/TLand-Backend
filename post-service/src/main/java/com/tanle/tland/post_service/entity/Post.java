@@ -48,7 +48,8 @@ public class Post {
     @Enumerated(EnumType.STRING)
     @Column(name = "type")
     private PostType type;
-
+    @Column(name = "price")
+    private double price;
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private PostStatus status;

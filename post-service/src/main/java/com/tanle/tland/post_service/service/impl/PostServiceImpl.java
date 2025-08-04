@@ -6,6 +6,8 @@ import com.tanle.tland.post_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.post_service.exception.UnauthorizedException;
 import com.tanle.tland.post_service.mapper.AssetMapper;
 import com.tanle.tland.post_service.mapper.PostMapper;
+import com.tanle.tland.post_service.projection.PostOverview;
+import com.tanle.tland.post_service.projection.StatusCount;
 import com.tanle.tland.post_service.repo.CommentRepo;
 import com.tanle.tland.post_service.repo.PostRepo;
 import com.tanle.tland.post_service.request.PostCreateRequest;
@@ -14,6 +16,7 @@ import com.tanle.tland.post_service.service.PostService;
 import com.tanle.tland.user_serivce.grpc.AssetRequest;
 import com.tanle.tland.user_serivce.grpc.AssetResponse;
 import com.tanle.tland.user_serivce.grpc.AssetToPostServiceGrpc;
+import com.tanle.tland.user_serivce.grpc.Content;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.data.domain.Page;
@@ -51,8 +54,7 @@ public class PostServiceImpl implements PostService {
                 .build());
 
         Post post = postMapper.convertToEntity(request);
-        post.setStatus(PostStatus.CREATED);
-
+        post.setStatus(PostStatus.WAITING_PAYMENT);
         postRepo.save(post);
 
         return MessageResponse.builder()
@@ -192,6 +194,35 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public PageResponse<PostOverviewResponse> findAllByStatus(String status, String userId, int page, int limit) {
+        Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<PostOverview> postOverviews = postRepo.findAllByStatus(pageable, PostStatus.valueOf(status));
+
+        List<PostOverviewResponse> data = postOverviews.get()
+                .map(p -> {
+                    PostOverviewResponse overviewResponse = postMapper.convertToResponse(p);
+                    Content content = assetToPostServiceBlockingStub.getPoster(
+                            AssetRequest.newBuilder()
+                                    .setUserId(userId)
+                                    .setId(p.getAssetId())
+                                    .build()
+                    );
+                    overviewResponse.setPosterUrl(content.getUrl());
+                    return overviewResponse;
+                }).collect(Collectors.toList());
+
+
+        return PageResponse.<PostOverviewResponse>builder()
+                .content(data)
+                .last(postOverviews.isLast())
+                .totalPages(postOverviews.getTotalPages())
+                .page(page)
+                .size(postOverviews.getSize())
+                .totalElements(postOverviews.getTotalElements())
+                .build();
+    }
+
+    @Override
     @Transactional
     public MessageResponse createComment(String postId, Map<String, String> content) {
         Post post = postRepo.findById(postId)
@@ -260,6 +291,18 @@ public class PostServiceImpl implements PostService {
                 .totalElements(comments.getTotalElements())
                 .page(comments.getNumber())
                 .build();
+    }
+
+    @Override
+    public List<StatusCountResponse> countStatusPost(String userId) {
+        List<StatusCount> counts = postRepo.countStatusPost(userId);
+
+        return counts.stream()
+                .map(c -> StatusCountResponse.builder()
+                        .count(c.getCount())
+                        .name(c.getStatus())
+                        .build())
+                .collect(Collectors.toList());
     }
 }
 

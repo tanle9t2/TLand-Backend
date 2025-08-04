@@ -48,4 +48,13 @@ public class Asset {
 
         contents.add(content);
     }
+
+    public Image getPoster() {
+        Image image = this.getContents().stream()
+                .filter(media -> media instanceof Image)
+                .map(m -> (Image) m)
+                .findAny().get();
+
+        return image;
+    }
 }
