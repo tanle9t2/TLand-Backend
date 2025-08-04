@@ -78,7 +78,8 @@ public class AssetController {
     public ResponseEntity<MessageResponse> uploadAssetImage(
             @RequestParam(value = "assetId", required = false) String id,
             @RequestParam(value = "file") MultipartFile file) {
-        MessageResponse response = assetService.uploadImage(UploadImageRequest.builder()
+        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+        MessageResponse response = assetService.uploadImage(userId, UploadImageRequest.builder()
                 .assetId(id)
                 .file(file)
                 .build());

@@ -35,13 +35,16 @@ public abstract class AssetMapperDecorator implements AssetMapper {
     @Override
     public AssetDetailResponse convertToDetailResponse(Asset asset) {
         AssetDetailResponse response = assetMapper.convertToDetailResponse(asset);
-        Category category = categoryRepo.findById(asset.getCategoryId())
-                .orElseThrow(() -> new ResourceNotFoundExeption("Not found category"));
+        if (asset.getCategoryId() != null) {
+            Category category = categoryRepo.findById(asset.getCategoryId())
+                    .orElseThrow(() -> new ResourceNotFoundExeption("Not found category"));
 
-        response.setCategory(CategoryResponse.builder()
-                .id(category.getId())
-                .name(category.getName())
-                .build());
+
+            response.setCategory(CategoryResponse.builder()
+                    .id(category.getId())
+                    .name(category.getName())
+                    .build());
+        }
         return response;
     }
 }

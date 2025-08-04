@@ -76,7 +76,7 @@ public class AssetServiceImpl implements AssetService {
     @Override
     public PageResponse<AssetSummaryResponse> findAll(String userId, int page, int size) {
         Pageable pageable = PageRequest.of(page, size);
-        Page<AssetSummary> assetPage = assetRepo.findAllByUserId(userId, pageable);
+        Page<AssetSummary> assetPage = assetRepo.findAllByUserIdAndType(userId, AssetType.PERSIST, pageable);
         List<AssetSummaryResponse> data = assetPage.get()
                 .map(a -> assetMapper.convertToAssetSummaryResponse(a))
                 .collect(Collectors.toList());
@@ -124,10 +124,11 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public MessageResponse uploadImage(UploadImageRequest request) {
+    public MessageResponse uploadImage(String userId, UploadImageRequest request) {
         Asset asset;
         if (request.getAssetId() == null) {
             asset = Asset.builder()
+                    .userId(userId)
                     .id(UUID.randomUUID().toString())
                     .build();
         } else

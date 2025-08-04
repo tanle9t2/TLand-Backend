@@ -12,7 +12,7 @@ import java.util.List;
 
 @Repository
 public interface AssetRepo extends MongoRepository<Asset, String> {
-    Page<AssetSummary> findAllByUserId(String userId, Pageable pageable);
+    Page<AssetSummary> findAllByUserIdAndType(String userId, AssetType type, Pageable pageable);
 
     List<Asset> findAllByTypeAndUserId(AssetType type, String userId);
 }

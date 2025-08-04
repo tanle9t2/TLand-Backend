@@ -23,7 +23,7 @@ public interface AssetService {
 
     MessageResponse createAsset(AssetCreateRequest createRequest);
 
-    MessageResponse uploadImage(UploadImageRequest request);
+    MessageResponse uploadImage(String userId, UploadImageRequest request);
 
     MessageResponse updateAsset(AssetCreateRequest request);
 }
