@@ -18,7 +18,12 @@ import java.util.List;
 public interface PostRepo extends JpaRepository<Post, String> {
     Page<Post> findAllByType(Pageable pageable, PostType type);
 
-    Page<PostOverview> findAllByStatus(Pageable pageable, PostStatus status);
+    @Query("""
+                from Post p 
+                WHERE p.title like concat('%',:kw,'%') 
+                AND p.status =:status
+            """)
+    Page<PostOverview> findAllByStatus(Pageable pageable, @Param("kw") String kw, @Param("status") PostStatus status);
 
     @Query(value = """
             SELECT s.status AS status, COUNT(p.id) AS count

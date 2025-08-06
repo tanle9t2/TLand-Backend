@@ -29,6 +29,8 @@ message AssetResponse {
   repeated int32 dimension = 7 ;
   map<string, string> properties = 8;
   repeated Content contentList = 9;
+  double landArea = 10;
+  double usableArea = 11;
 }
 
 message Content {

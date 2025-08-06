@@ -17,8 +17,10 @@ public class AssetDetailResponse {
     private String id;
     private String name;
     private String description;
-    private double pricePerSquare;
+    private double price;
     private LocalDateTime createdAt;
+    private double landArea;
+    private double usableArea;
     private String province;
     private String ward;
     private String address;
@@ -27,7 +29,6 @@ public class AssetDetailResponse {
     private String projectId;
     private String userId;
     private List<Content> contents;
-
 
     @NoArgsConstructor
     @AllArgsConstructor

@@ -17,6 +17,7 @@ import com.tanle.tland.user_serivce.grpc.AssetRequest;
 import com.tanle.tland.user_serivce.grpc.AssetResponse;
 import com.tanle.tland.user_serivce.grpc.AssetToPostServiceGrpc;
 import com.tanle.tland.user_serivce.grpc.Content;
+import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.data.domain.Page;
@@ -27,6 +28,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -65,24 +67,18 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public MessageResponse updatePost(String postId, String userId, Map<String, String> updateRequest) {
+    public MessageResponse updatePost(String postId, String userId, PostCreateRequest request) throws AccessDeniedException {
         Post post = postRepo.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
         if (!post.getUserId().equals(userId))
-            throw new UnauthorizedException("Don't have permission for this resource");
+            throw new AccessDeniedException("Don't have permission for this resource");
 
-        if (updateRequest.containsKey("title")) {
-            post.setTitle(updateRequest.get("title"));
-        }
 
-        if (updateRequest.containsKey("description")) {
-            post.setTitle(updateRequest.get("description"));
-        }
+        postMapper.updatePost(request, post);
         postRepo.save(post);
-
         return MessageResponse.builder()
                 .status(HttpStatus.OK)
-                .data(updateRequest)
+                .data(Map.of("id", post.getId()))
                 .message("Successfully update post")
                 .build();
     }
@@ -194,9 +190,9 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PageResponse<PostOverviewResponse> findAllByStatus(String status, String userId, int page, int limit) {
+    public PageResponse<PostOverviewResponse> findAllByStatus(String status, String kw, String userId, int page, int limit) {
         Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<PostOverview> postOverviews = postRepo.findAllByStatus(pageable, PostStatus.valueOf(status));
+        Page<PostOverview> postOverviews = postRepo.findAllByStatus(pageable, kw, PostStatus.valueOf(status));
 
         List<PostOverviewResponse> data = postOverviews.get()
                 .map(p -> {

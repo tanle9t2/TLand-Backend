@@ -87,7 +87,7 @@ public class ControllerExceptionHandler {
 
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ExceptionResponse> handleUnauthorization(AccessDeniedException exception) {
+    public ResponseEntity<ExceptionResponse> handleAccessDeniedException(AccessDeniedException exception) {
         ExceptionResponse response = ExceptionResponse.builder()
                 .type("/exception/" + exception.getClass().getSimpleName())
                 .title("You do not have permission to access this resource")

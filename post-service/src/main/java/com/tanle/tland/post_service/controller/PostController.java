@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Map;
 
@@ -27,20 +28,38 @@ public class PostController {
     }
 
     @GetMapping("/posts")
-    public ResponseEntity<PageResponse> getPosts(@RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
-                                                 @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size,
-                                                 @RequestParam(value = "type") String type) {
+    public ResponseEntity<PageResponse> getPosts(
+            @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
+            @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size,
+            @RequestParam(value = "type") String type) {
         PageResponse response = postService.findAll(Integer.parseInt(page), Integer.parseInt(size), type);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/post/status")
-    public ResponseEntity<PageResponse<PostOverviewResponse>> getPostsByStatus(@RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
-                                                                               @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size,
-                                                                               @RequestParam(value = "status") String status) {
+    public ResponseEntity<PageResponse<PostOverviewResponse>> getPostsByStatus(
+            @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
+            @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size,
+            @RequestParam(value = "status") String status,
+            @RequestParam(value = "kw", defaultValue = "") String keyword) {
         String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
-        PageResponse<PostOverviewResponse> response = postService.findAllByStatus(status, userId,
+        PageResponse<PostOverviewResponse> response = postService.findAllByStatus(status, keyword, userId,
                 Integer.parseInt(page), Integer.parseInt(size));
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/post/{postId}")
+    public ResponseEntity<MessageResponse> updatePost(@PathVariable("postId") String postId,
+                                                      @RequestBody PostCreateRequest request) throws AccessDeniedException {
+        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+        MessageResponse response = postService.updatePost(postId, userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/post/{postId}")
+    public ResponseEntity<MessageResponse> deletePost(@PathVariable("postId") String postId) {
+        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+        MessageResponse response = postService.inActivePost(userId, postId);
         return ResponseEntity.ok(response);
     }
 

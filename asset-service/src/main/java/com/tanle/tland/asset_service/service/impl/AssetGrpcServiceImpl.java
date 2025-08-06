@@ -112,12 +112,15 @@ public class AssetGrpcServiceImpl extends AssetToPostServiceGrpc.AssetToPostServ
 
 
         AssetResponse response = AssetResponse.newBuilder()
+                .setId(asset.getId())
                 .addAllContentList(contentList)
                 .setAddress(asset.getAddress())
                 .setName(asset.getName())
                 .setDescription(asset.getDescription())
                 .setProvince(asset.getProvince())
                 .setWard(asset.getWard())
+                .setLandArea(asset.getLandArea())
+                .setUsableArea(asset.getUsableArea())
                 .addAllDimension(Arrays.stream(asset.getDimension())
                         .boxed()
                         .collect(Collectors.toList()))
