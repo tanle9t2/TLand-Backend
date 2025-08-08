@@ -23,12 +23,12 @@ public class AssetCreateRequest {
     private String address;
     private int[] dimension;
     private String type;
+    private Map<String, String> locationAsset;
     private double landArea;
     private double usableArea;
     private String categoryId;
     private String[] otherInfo;
     private Map<String, String> properties;
     private String projectId;
-    private String userId;
     private List<Content> contents;
 }

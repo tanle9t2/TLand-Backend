@@ -10,6 +10,7 @@ import com.tanle.tland.asset_service.response.MessageResponse;
 import org.apache.logging.log4j.message.Message;
 import org.springframework.data.domain.Page;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 
 public interface AssetService {
@@ -19,11 +20,13 @@ public interface AssetService {
 
     PageResponse<AssetSummaryResponse> findAll(String userId, int page, int size);
 
+    MessageResponse deleteAsset(String assetId, String userId) throws AccessDeniedException;
+
     MessageResponse linkAssetToProject(String assetId, String projectId);
 
-    MessageResponse createAsset(AssetCreateRequest createRequest);
+    MessageResponse createAsset(AssetCreateRequest createRequest,String userId);
 
-    MessageResponse uploadImage(String userId, UploadImageRequest request);
+    MessageResponse uploadMedia(String userId, UploadImageRequest request);
 
-    MessageResponse updateAsset(AssetCreateRequest request);
+    MessageResponse updateAsset(AssetCreateRequest request, String userId) throws AccessDeniedException;
 }

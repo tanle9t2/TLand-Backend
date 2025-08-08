@@ -3,6 +3,7 @@ package com.tanle.tland.post_service.repo;
 import com.tanle.tland.post_service.entity.Post;
 import com.tanle.tland.post_service.entity.PostStatus;
 import com.tanle.tland.post_service.entity.PostType;
+import com.tanle.tland.post_service.projection.PostHistory;
 import com.tanle.tland.post_service.projection.PostOverview;
 import com.tanle.tland.post_service.projection.StatusCount;
 import org.springframework.data.domain.Page;
@@ -16,7 +17,18 @@ import java.util.List;
 
 @Repository
 public interface PostRepo extends JpaRepository<Post, String> {
-    Page<Post> findAllByType(Pageable pageable, PostType type);
+
+
+    @Query("""
+            from Post p 
+            where p.type =:type
+            and p.status =:status
+            """)
+    Page<Post> findAllByType(Pageable pageable, @Param("type") PostType type, @Param("status") PostStatus status);
+
+    boolean existsByAssetIdAndStatus(String assetId, PostStatus status);
+
+    Page<PostHistory> findAllByAssetIdAndUserId(String assetId, String userId, Pageable pageable);
 
     @Query("""
                 from Post p 

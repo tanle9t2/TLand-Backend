@@ -6,6 +6,7 @@ import com.tanle.tland.post_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.post_service.exception.UnauthorizedException;
 import com.tanle.tland.post_service.mapper.AssetMapper;
 import com.tanle.tland.post_service.mapper.PostMapper;
+import com.tanle.tland.post_service.projection.PostHistory;
 import com.tanle.tland.post_service.projection.PostOverview;
 import com.tanle.tland.post_service.projection.StatusCount;
 import com.tanle.tland.post_service.repo.CommentRepo;
@@ -163,9 +164,27 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public PageResponse<PostHistoryResponse> findHistoryPost(String assetId, String userId, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Page<PostHistory> histories = postRepo.findAllByAssetIdAndUserId(assetId, userId, pageable);
+
+        List<PostHistoryResponse> data = histories.get()
+                .map(p -> postMapper.convertToResponse(p))
+                .collect(Collectors.toList());
+
+        return PageResponse.<PostHistoryResponse>builder()
+                .content(data)
+                .last(histories.isLast())
+                .size(histories.getSize())
+                .totalElements(histories.getTotalElements())
+                .totalPages(histories.getTotalPages())
+                .build();
+    }
+
+    @Override
     public PageResponse<PostResponse> findAll(int page, int limit, String type) {
         Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<Post> postPage = postRepo.findAllByType(pageable, PostType.valueOf(type));
+        Page<Post> postPage = postRepo.findAllByType(pageable, PostType.valueOf(type), PostStatus.SHOW);
 
         List<PostResponse> posts = postPage.stream().
                 map(p -> {

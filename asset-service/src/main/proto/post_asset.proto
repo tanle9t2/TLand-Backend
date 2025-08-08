@@ -1,0 +1,17 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "com.tanle.tland.user_serivce.grpc";
+option java_outer_classname = "PostToAssetProto";
+
+service PostToAssetService {
+  rpc checkAttachedPost(PostCheckAttachRequest) returns(PostCheckAttachResponse);
+}
+
+message PostCheckAttachRequest {
+  string id = 1;
+  string userId = 2;
+}
+
+message PostCheckAttachResponse {
+  bool isAttached = 1;
+}

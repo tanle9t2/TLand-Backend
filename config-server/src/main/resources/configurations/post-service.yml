@@ -25,3 +25,6 @@ grpc:
     assetService:
       address: "discovery:///asset-service"
       negotiationType: PLAINTEXT
+  server:
+    port: 9094
+    enable-reflection: true

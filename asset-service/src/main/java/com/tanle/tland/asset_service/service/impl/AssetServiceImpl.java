@@ -18,9 +18,7 @@ import com.tanle.tland.asset_service.service.ProjectService;
 import com.tanle.tland.upload_service.grpc.FileChunk;
 import com.tanle.tland.upload_service.grpc.UploadResponse;
 import com.tanle.tland.upload_service.grpc.UploadServiceGrpc;
-import com.tanle.tland.user_serivce.grpc.UserRequest;
-import com.tanle.tland.user_serivce.grpc.UserResponse;
-import com.tanle.tland.user_serivce.grpc.UserToAssetServiceGrpc;
+import com.tanle.tland.user_serivce.grpc.*;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -34,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.AccessDeniedException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +49,8 @@ public class AssetServiceImpl implements AssetService {
     private UserToAssetServiceGrpc.UserToAssetServiceBlockingStub serviceBlockingStub;
     @GrpcClient("uploadServiceGrpc")
     private UploadServiceGrpc.UploadServiceStub uploadServiceStub;
+    @GrpcClient("postServiceGrpc")
+    private PostToAssetServiceGrpc.PostToAssetServiceBlockingStub postToAssetServiceBlockingStub;
     private final AssetRepo assetRepo;
     private final AssetMapper assetMapper;
     private final ProjectRepo projectRepo;
@@ -59,8 +60,14 @@ public class AssetServiceImpl implements AssetService {
     public AssetDetailResponse findAssetById(String id) {
         Asset asset = assetRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found asset"));
-
-        return assetMapper.convertToDetailResponse(asset);
+        PostCheckAttachResponse postCheckAttachResponse = postToAssetServiceBlockingStub.checkAttachedPost(
+                PostCheckAttachRequest.newBuilder()
+                        .setId(asset.getId())
+                        .build()
+        );
+        AssetDetailResponse response = assetMapper.convertToDetailResponse(asset);
+        response.setAttachedPostShow(postCheckAttachResponse.getIsAttached());
+        return response;
     }
 
     @Override
@@ -92,6 +99,33 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
+    public MessageResponse deleteAsset(String assetId, String userId) throws AccessDeniedException {
+        Asset asset = assetRepo.findById(assetId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found asset"));
+
+        if (!asset.getUserId().equals(userId))
+            throw new AccessDeniedException("Don't have permission for this resource");
+
+        PostCheckAttachResponse response = postToAssetServiceBlockingStub.checkAttachedPost(
+                PostCheckAttachRequest.newBuilder()
+                        .setId(asset.getId())
+                        .build()
+        );
+        if (response.getIsAttached())
+            throw new RuntimeException("Asset is showing");
+
+
+        asset.setType(AssetType.DELETE);
+        assetRepo.save(asset);
+
+        return MessageResponse.builder()
+                .message("Successfully delete asset")
+                .status(HttpStatus.OK)
+                .data(Map.of("id", asset.getId()))
+                .build();
+    }
+
+    @Override
     public MessageResponse linkAssetToProject(String assetId, String projectId) {
         projectRepo.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found project: " + projectId));
@@ -108,9 +142,9 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public MessageResponse createAsset(AssetCreateRequest createRequest) {
+    public MessageResponse createAsset(AssetCreateRequest createRequest, String userId) {
         UserResponse userResponse = serviceBlockingStub.getUserById(UserRequest.newBuilder()
-                .setId(createRequest.getUserId())
+                .setId(userId)
                 .build());
 
         Asset asset = assetMapper.convertToAsset(createRequest);
@@ -124,7 +158,7 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public MessageResponse uploadImage(String userId, UploadImageRequest request) {
+    public MessageResponse uploadMedia(String userId, UploadImageRequest request) {
         Asset asset;
         if (request.getAssetId() == null) {
             asset = Asset.builder()
@@ -176,7 +210,7 @@ public class AssetServiceImpl implements AssetService {
             }
             UploadResponse uploadResponse = responses[0];
 
-            if (uploadResponse.getType().equals(ContentType.IMAGE)) {
+            if (uploadResponse.getType().equals(ContentType.IMAGE.name())) {
                 Image image = Image.builder()
                         .id(UUID.randomUUID().toString())
                         .url(uploadResponse.getUrl())
@@ -212,12 +246,15 @@ public class AssetServiceImpl implements AssetService {
     }
 
     @Override
-    public MessageResponse updateAsset(AssetCreateRequest request) {
+    public MessageResponse updateAsset(AssetCreateRequest request, String userId) throws AccessDeniedException {
         UserResponse userResponse = serviceBlockingStub.getUserById(UserRequest.newBuilder()
-                .setId(request.getUserId())
+                .setId(userId)
                 .build());
         Asset asset = assetRepo.findById(request.getId())
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found asset"));
+
+        if (!asset.getUserId().equals(userId))
+            throw new AccessDeniedException("Don't have permission for this resource");
 
         assetMapper.updateConvertAsset(request, asset);
         assetRepo.save(asset);

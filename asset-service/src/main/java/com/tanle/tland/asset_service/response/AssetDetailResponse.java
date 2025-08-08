@@ -19,17 +19,19 @@ import java.util.Map;
 public class AssetDetailResponse {
     private String id;
     private String name;
-    private String description;
+    private boolean isAttachedPostShow;
     private LocalDateTime createdAt;
     private String province;
     private String ward;
     private String address;
     private int[] dimension;
     private String[] otherInfo;
+    private Map<String, String> locationAsset;
     private Map<String, String> properties;
+    private double landArea;
+    private double usableArea;
     private String projectId;
     private String userId;
-    private double pricePerSquare;
     private List<Content> contents;
     private CategoryResponse category;
 }

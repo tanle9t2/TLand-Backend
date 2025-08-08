@@ -1,6 +1,7 @@
 package com.tanle.tland.post_service.controller;
 
 import com.google.api.Page;
+import com.tanle.tland.post_service.entity.PostStatus;
 import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.*;
 import com.tanle.tland.post_service.service.PostService;
@@ -60,6 +61,17 @@ public class PostController {
     public ResponseEntity<MessageResponse> deletePost(@PathVariable("postId") String postId) {
         String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
         MessageResponse response = postService.inActivePost(userId, postId);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/posts/history/{assetId}")
+    public ResponseEntity<PageResponse<PostHistoryResponse>> getHistoryPost(
+            @PathVariable("assetId") String assetId,
+            @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
+            @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size) {
+        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+        PageResponse<PostHistoryResponse> response = postService.findHistoryPost(assetId, userId,
+                Integer.parseInt(page), Integer.parseInt(size));
         return ResponseEntity.ok(response);
     }
 

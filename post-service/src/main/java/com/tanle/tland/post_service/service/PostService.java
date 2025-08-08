@@ -21,6 +21,7 @@ public interface PostService {
     MessageResponse unlikePost(String userId, String postId);
 
     PostResponse findPostById(String postId);
+    PageResponse<PostHistoryResponse> findHistoryPost(String assetId,String userId,int page,int size);
 
     PageResponse<PostResponse> findAll(int page, int limit, String type);
 

@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import static com.tanle.tland.asset_service.utils.AppConstant.*;
 
+import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Map;
 
@@ -64,22 +65,31 @@ public class AssetController {
 
     @PostMapping("/asset")
     public ResponseEntity<MessageResponse> createAsset(@RequestBody AssetCreateRequest request) {
-        MessageResponse response = assetService.createAsset(request);
+        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+        MessageResponse response = assetService.createAsset(request, userId);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/asset")
-    public ResponseEntity<MessageResponse> updateAsset(@RequestBody AssetCreateRequest request) {
-        MessageResponse response = assetService.updateAsset(request);
+    public ResponseEntity<MessageResponse> updateAsset(@RequestBody AssetCreateRequest request) throws AccessDeniedException {
+        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+        MessageResponse response = assetService.updateAsset(request, userId);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/asset/{assetId}")
+    public ResponseEntity<MessageResponse> deleteAsset(@PathVariable("assetId") String assetId) throws AccessDeniedException {
+        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+        MessageResponse response = assetService.deleteAsset(assetId, userId);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/asset/upload")
-    public ResponseEntity<MessageResponse> uploadAssetImage(
+    public ResponseEntity<MessageResponse> UploadAssetMedia(
             @RequestParam(value = "assetId", required = false) String id,
             @RequestParam(value = "file") MultipartFile file) {
         String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
-        MessageResponse response = assetService.uploadImage(userId, UploadImageRequest.builder()
+        MessageResponse response = assetService.uploadMedia(userId, UploadImageRequest.builder()
                 .assetId(id)
                 .file(file)
                 .build());
