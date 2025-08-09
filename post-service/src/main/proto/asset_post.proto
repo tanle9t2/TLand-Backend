@@ -21,8 +21,6 @@ message CheckExistedResponse {
 
 message AssetResponse {
   string id = 1;
-  string name = 2;
-  string description = 3;
   string province = 4;
   string ward = 5;
   string address = 6;
@@ -31,8 +29,15 @@ message AssetResponse {
   repeated Content contentList = 9;
   double landArea = 10;
   double usableArea = 11;
-}
+  repeated string otherInfo = 12;
+  map<string, string> locationAsset = 13;
+  CategoryResponse category = 14;
 
+}
+message CategoryResponse {
+  string id = 1;
+  string name = 2;
+}
 message Content {
   string id = 1;
   string url = 2;

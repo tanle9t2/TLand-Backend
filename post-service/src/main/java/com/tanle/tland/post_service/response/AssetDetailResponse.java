@@ -25,7 +25,9 @@ public class AssetDetailResponse {
     private String ward;
     private String address;
     private List<Integer> dimension;
+    private Map<String, String> locationAsset;
     private Map<String, String> properties;
+    private String[] otherInfo;
     private String projectId;
     private String userId;
     private List<Content> contents;

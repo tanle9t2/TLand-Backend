@@ -22,7 +22,7 @@ spring:
 
 grpc:
   client:
-    assetService:
+    assetServiceGrpc:
       address: "discovery:///asset-service"
       negotiationType: PLAINTEXT
   server:

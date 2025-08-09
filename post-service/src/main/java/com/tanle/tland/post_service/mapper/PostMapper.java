@@ -7,6 +7,7 @@ import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.PostHistoryResponse;
 import com.tanle.tland.post_service.response.PostOverviewResponse;
 import com.tanle.tland.post_service.response.PostResponse;
+import com.tanle.tland.user_serivce.grpc.PostDetailResponse;
 import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
@@ -25,4 +26,6 @@ public interface PostMapper {
     PostHistoryResponse convertToResponse(PostHistory postHistory);
 
     PostResponse convertToPostDetailResponse(Post post);
+
+    PostDetailResponse convertToResponseGrpc(Post post);
 }

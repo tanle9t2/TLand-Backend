@@ -20,6 +20,8 @@ public abstract class AssetMapperDecorator implements AssetMapper {
         AssetDetailResponse response = assetMapper.convertToResponse(assetResponse);
 
         response.setDimension(assetResponse.getDimensionList());
+
+        response.setOtherInfo(assetResponse.getOtherInfoList().toArray(new String[0]));
         response.setContents(
                 assetResponse.getContentListList().stream()
                         .map(c -> AssetDetailResponse.Content.builder()

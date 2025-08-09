@@ -209,6 +209,23 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    public List<PostResponse> findAll() {
+        List<PostResponse> postResponses = postRepo.findAll().stream()
+                .map(p -> {
+                    AssetResponse assetResponse = assetToPostServiceBlockingStub.getAssetDetail(AssetRequest.newBuilder()
+                            .setId(p.getAssetId())
+                            .build());
+
+                    PostResponse postResponse = postMapper.convertToPostDetailResponse(p);
+                    postResponse.setAssetDetail(assetMapper.convertToResponse(assetResponse));
+                    return postResponse;
+                })
+                .collect(Collectors.toList());
+
+        return postResponses;
+    }
+
+    @Override
     public PageResponse<PostOverviewResponse> findAllByStatus(String status, String kw, String userId, int page, int limit) {
         Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<PostOverview> postOverviews = postRepo.findAllByStatus(pageable, kw, PostStatus.valueOf(status));

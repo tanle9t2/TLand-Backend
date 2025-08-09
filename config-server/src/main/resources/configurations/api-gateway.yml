@@ -22,6 +22,10 @@ spring:
               uri: lb:http://POST-SERVICE
               predicates:
                 - Path=/post-service/api/v1/**
+            - id: search-service
+              uri: lb:http://SEARCH-SERVICE
+              predicates:
+                - Path=/search-service/api/v1/**
 
   main:
     web-application-type: reactive

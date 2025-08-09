@@ -5,7 +5,9 @@ import com.tanle.tland.asset_service.entity.ContentType;
 import com.tanle.tland.asset_service.entity.Image;
 import com.tanle.tland.asset_service.entity.Video;
 import com.tanle.tland.asset_service.exception.ResourceNotFoundExeption;
+import com.tanle.tland.asset_service.mapper.AssetMapper;
 import com.tanle.tland.asset_service.repo.AssetRepo;
+import com.tanle.tland.asset_service.repo.CategoryRepo;
 import com.tanle.tland.user_serivce.grpc.*;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
@@ -21,6 +23,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AssetGrpcServiceImpl extends AssetToPostServiceGrpc.AssetToPostServiceImplBase {
     private final AssetRepo assetRepo;
+    private final CategoryRepo categoryRepo;
+    private final AssetMapper assetMapper;
 
     @Override
     public void getPoster(AssetRequest request, StreamObserver<Content> responseObserver) {
@@ -86,46 +90,7 @@ public class AssetGrpcServiceImpl extends AssetToPostServiceGrpc.AssetToPostServ
                             .asRuntimeException());
 
         Asset asset = optionalAsset.get();
-
-        List<Content> contentList = asset.getContents().stream()
-                .map(c -> {
-                    Content.Builder builder = Content.newBuilder();
-
-                    if (c instanceof Video video) {
-                        builder.setId(video.getId())
-                                .setDuration(video.getDuration())
-                                .setName(video.getName())
-                                .setType("Video")
-                                .setUrl(video.getUrl());
-                    } else if (c instanceof Image image) {
-                        builder.setId(image.getId())
-                                .setDuration(0) // or Duration.getDefaultInstance() if it's a message
-                                .setName(image.getName())
-                                .setType("Image")
-                                .setUrl(image.getUrl());
-                    } else {
-                        throw new IllegalArgumentException("Unknown content type: " + c.getClass());
-                    }
-                    return builder.build();
-                })
-                .collect(Collectors.toList());
-
-
-        AssetResponse response = AssetResponse.newBuilder()
-                .setId(asset.getId())
-                .addAllContentList(contentList)
-                .setAddress(asset.getAddress())
-                .setName(asset.getName())
-                .setDescription(asset.getDescription())
-                .setProvince(asset.getProvince())
-                .setWard(asset.getWard())
-                .setLandArea(asset.getLandArea())
-                .setUsableArea(asset.getUsableArea())
-                .addAllDimension(Arrays.stream(asset.getDimension())
-                        .boxed()
-                        .collect(Collectors.toList()))
-                .putAllProperties(asset.getProperties())
-                .build();
+        AssetResponse response = assetMapper.convertToResponseGrpc(asset);
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();

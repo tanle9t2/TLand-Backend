@@ -6,6 +6,7 @@ import com.tanle.tland.asset_service.projection.AssetSummary;
 import com.tanle.tland.asset_service.request.AssetCreateRequest;
 import com.tanle.tland.asset_service.response.AssetDetailResponse;
 import com.tanle.tland.asset_service.response.AssetSummaryResponse;
+import com.tanle.tland.user_serivce.grpc.AssetResponse;
 import org.mapstruct.*;
 import org.springframework.stereotype.Component;
 
@@ -21,4 +22,8 @@ public interface AssetMapper {
     void updateConvertAsset(AssetCreateRequest request, @MappingTarget Asset asset);
 
     AssetDetailResponse convertToDetailResponse(Asset asset);
+
+    @Mapping(target = "properties", ignore = true)
+    @Mapping(target = "locationAsset", ignore = true)
+    AssetResponse convertToResponseGrpc(Asset asset);
 }
