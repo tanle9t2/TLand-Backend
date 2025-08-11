@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
 
-    @GrpcClient("assetService")
+    @GrpcClient("assetServiceGrpc")
     private AssetToPostServiceGrpc.AssetToPostServiceBlockingStub assetToPostServiceBlockingStub;
     private final PostRepo postRepo;
     private final CommentRepo commentRepo;

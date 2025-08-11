@@ -2,11 +2,13 @@ package com.tanle.tland.search_service.service.impl;
 
 
 import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import com.tanle.tland.search_service.entity.PostDocument;
 import com.tanle.tland.search_service.entity.enums.PostStatus;
+import com.tanle.tland.search_service.entity.enums.PostType;
 import com.tanle.tland.search_service.mapper.PostMapper;
 import com.tanle.tland.search_service.response.FilterSearchResponse;
 import com.tanle.tland.search_service.response.PageResponse;
@@ -21,6 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.apache.catalina.util.FilterUtil;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.elasticsearch.client.elc.ElasticsearchAggregation;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.client.elc.NativeQueryBuilder;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.IndexOperations;
@@ -29,8 +33,10 @@ import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
 import org.springframework.stereotype.Service;
 
 import static com.tanle.tland.search_service.utils.AppConstant.INDEX_NAME;
+import static com.tanle.tland.search_service.utils.FilterUtils.*;
 import static com.tanle.tland.search_service.utils.ValidationUtils.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -71,8 +77,75 @@ public class SearchServiceImpl implements SearchService {
     }
 
     @Override
-    public List<FilterSearchResponse> getAggregation(String keyword) {
-        return null;
+    public List<FilterSearchResponse> getAggregation(String keyword, Map<String, String> params) {
+        NativeQueryBuilder queryBuilder = this.extractQuery(keyword, PAGE, PAGE_SIZE, params);
+        NativeQuery query = queryBuilder
+                .withAggregation("WARD", Aggregation.of(a -> a
+                                .terms(t -> t
+                                        .field("assetDetail.ward.keyword")
+                                        .size(20)
+                                )
+                        )
+                )
+                .build();
+
+        SearchHits<PostDocument> searchHits = elasticsearchOperations.search(query, PostDocument.class);
+        List<org.springframework.data.elasticsearch.client.elc.Aggregation> aggregations = new ArrayList<>();
+
+        if (searchHits.hasAggregations()) {
+            ((List<ElasticsearchAggregation>) searchHits.getAggregations().aggregations())
+                    .forEach(elsAgg -> aggregations.add(elsAgg.aggregation()));
+        }
+
+
+        List<FilterSearchResponse> responses = new ArrayList<>();
+
+        for (org.springframework.data.elasticsearch.client.elc.Aggregation agg : aggregations) {
+            String aggName = agg.getName();
+            Aggregate innerAgg = agg.getAggregate();
+            List<FilterSearchResponse.FilterSearchItem> filterResponseItems = new ArrayList<>();
+
+            switch (innerAgg._kind()) {
+                case Sterms:
+                    StringTermsAggregate stringTermsAgg = (StringTermsAggregate) innerAgg._get();
+                    List<StringTermsBucket> stringBuckets = (List<StringTermsBucket>) stringTermsAgg.buckets()._get();
+                    for (StringTermsBucket bucket : stringBuckets) {
+                        FilterSearchResponse.FilterSearchItem item = FilterSearchResponse.FilterSearchItem
+                                .builder()
+                                .label(bucket.key().stringValue())
+                                .value(bucket.key().stringValue())
+                                .count(bucket.docCount())
+                                .build();
+                        if (!bucket.aggregations().isEmpty()) {
+                            StringTermsAggregate nameAgg = (StringTermsAggregate) bucket.aggregations().get("name")._get();
+                            item.setLabel(nameAgg.buckets().array().get(0).key().stringValue());
+                        }
+                        filterResponseItems.add(item);
+                    }
+                    break;
+                case Range:
+                    List<RangeBucket> rangeBuckets = (List<RangeBucket>) innerAgg.range().buckets()._get();
+                    for (RangeBucket bucket : rangeBuckets) {
+                        filterResponseItems.add(FilterSearchResponse.FilterSearchItem
+                                .builder()
+                                .label(bucket.key())
+                                .value(bucket.key())
+                                .count(bucket.docCount())
+                                .build());
+                    }
+                    break;
+                default:
+                    break;
+            }
+            responses.add(FilterSearchResponse
+                    .builder()
+                    .label(aggName)
+                    .value(AGGS_VALUE.get(aggName))
+                    .items(filterResponseItems)
+                    .build());
+        }
+
+        return responses;
     }
 
     @Override
@@ -99,9 +172,14 @@ public class SearchServiceImpl implements SearchService {
         return params != null && !isNullOrEmpty(params.get(keyword));
     }
 
+    private NativeQueryBuilder extractQuery(String keyword) {
+        return this.extractQuery(keyword, FilterUtils.PAGE, FilterUtils.PAGE_SIZE, null);
+    }
+
     private NativeQueryBuilder extractQuery(String keyword, String page, String size, Map<String, String> params) {
         String category = isValidSearchField(params, FilterUtils.CATEGORY) ? params.get(FilterUtils.CATEGORY) : null;
         String province = isValidSearchField(params, FilterUtils.PROVINCE) ? params.get(FilterUtils.PROVINCE) : null;
+        String type = isValidSearchField(params, TYPE) ? params.get(TYPE) : null;
         String ward = isValidSearchField(params, FilterUtils.WARD) ? params.get(FilterUtils.WARD) : null;
         Double minPrice = isValidSearchField(params, FilterUtils.MIN_PRICE) ? Double.parseDouble(params.get(FilterUtils.MIN_PRICE)) : null;
         Double maxPrice = isValidSearchField(params, FilterUtils.MAX_PRICE) ? Double.parseDouble(params.get(FilterUtils.MAX_PRICE)) : null;
@@ -122,11 +200,10 @@ public class SearchServiceImpl implements SearchService {
                     .should(QueryBuilders.multiMatch(m -> m
                             .fields("title",
                                     "description",
-                                    "assetDocument.province",
-                                    "assetDocument.ward",
-                                    "assetDocument.address",
-                                    "assetDocument.categoryDocument.name",
-                                    "sectionDocument.contentDocumentList.name")
+                                    "assetDetail.province",
+                                    "assetDetail.ward",
+                                    "assetDetail.address",
+                                    "assetDetail.categoryDocument.name")
                             .query(keyword)
                             .fuzziness("AUTO")
                             .boost(1.2f)))
@@ -147,7 +224,9 @@ public class SearchServiceImpl implements SearchService {
                 Integer.parseInt(size)));
 
         queryBuilder.withFilter(f -> f.bool(b -> {
-            extractedTermsFilter(category, "category", b);
+            extractedTermsFilter(province, "assetDetail.province.keyword", b);
+            extractedTermsFilter(type, "type.keyword", b);
+            extractedTermsFilter(category, "assetDetail.category.id.keyword", b);
             extractedRange(minPrice, maxPrice, "price", b);
             return b;
         }));

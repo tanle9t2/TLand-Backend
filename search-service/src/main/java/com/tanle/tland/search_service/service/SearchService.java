@@ -10,7 +10,7 @@ import java.util.Map;
 public interface SearchService {
     PageResponse<PostDocument> searchPost(String keyword, String page, String size, Map<String, String> params);
 
-    List<FilterSearchResponse> getAggregation(String keyword);
+    List<FilterSearchResponse> getAggregation(String keyword, Map<String, String> params);
 
     void migrateData();
 }

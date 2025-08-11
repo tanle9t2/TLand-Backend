@@ -1,6 +1,7 @@
 package com.tanle.tland.search_service.controller;
 
 import com.tanle.tland.search_service.entity.PostDocument;
+import com.tanle.tland.search_service.response.FilterSearchResponse;
 import com.tanle.tland.search_service.response.PageResponse;
 import com.tanle.tland.search_service.service.SearchService;
 import com.tanle.tland.search_service.utils.FilterUtils;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -32,7 +34,20 @@ public class SearchController {
         PageResponse<PostDocument> post = searchService.searchPost(keyword, page, size, params);
 
 
-        return new ResponseEntity<>(post, HttpStatus.OK);
+        return ResponseEntity.ok(post);
+    }
+
+    @GetMapping("/search/filters")
+    public ResponseEntity<?> getFilters(
+            @RequestParam(value = "keyword", required = false, defaultValue = "") String keyword,
+            @RequestParam(value = "page", required = false, defaultValue = FilterUtils.PAGE) String page,
+            @RequestParam(value = "size", required = false, defaultValue = FilterUtils.PAGE_SIZE) String size,
+            @RequestParam Map<String, String> params
+    ) {
+        List<FilterSearchResponse> filterSearchResponses = searchService.getAggregation(keyword,params);
+
+
+        return ResponseEntity.ok(filterSearchResponses);
     }
 
     @GetMapping("/search/async")

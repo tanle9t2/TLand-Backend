@@ -16,6 +16,16 @@ spring:
     index-recovery:
       mode: full  # Make sure recovery mode is set to full
 
+logging:
+  level:
+    org:
+      elasticsearch:
+        client: TRACE
+      springframework:
+        data:
+          elasticsearch:
+            client: TRACE
+
 grpc:
   client:
     postServiceGrpc:
