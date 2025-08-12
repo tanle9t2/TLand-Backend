@@ -6,6 +6,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.*;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
+import co.elastic.clients.json.JsonData;
 import com.tanle.tland.search_service.entity.PostDocument;
 import com.tanle.tland.search_service.entity.enums.PostStatus;
 import com.tanle.tland.search_service.entity.enums.PostType;
@@ -39,6 +40,7 @@ import static com.tanle.tland.search_service.utils.ValidationUtils.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -76,18 +78,54 @@ public class SearchServiceImpl implements SearchService {
                 .build();
     }
 
+    private void addOptionalAggregation(
+            NativeQueryBuilder builder,
+            String aggName,
+            String paramValue,
+            Function<String, Aggregation> aggregationSupplier
+    ) {
+        if (paramValue != null && !paramValue.isEmpty()) {
+            builder.withAggregation(aggName, aggregationSupplier.apply(paramValue));
+        }
+    }
+
     @Override
     public List<FilterSearchResponse> getAggregation(String keyword, Map<String, String> params) {
-        NativeQueryBuilder queryBuilder = this.extractQuery(keyword, PAGE, PAGE_SIZE, params);
-        NativeQuery query = queryBuilder
-                .withAggregation("WARD", Aggregation.of(a -> a
+        NativeQueryBuilder queryBuilder = this.extractQuery(keyword, PAGE, "1", params);
+        addOptionalAggregation(
+                queryBuilder,
+                WARD,
+                params.get(PROVINCE),
+                province -> Aggregation.of(a -> a
+                        .filter(fa -> fa
+                                .term(t -> t
+                                        .field("assetDetail.province.keyword")
+                                        .value(province)
+                                )
+                        )
+                        .aggregations("ward", agg -> agg
                                 .terms(t -> t
                                         .field("assetDetail.ward.keyword")
                                         .size(20)
                                 )
                         )
                 )
-                .build();
+        );
+        queryBuilder.withAggregation(PROPERTIES, Aggregation.of(a -> a
+                .terms(t -> t
+                        .script(s -> s
+                                .source("""
+                                            if (params._source?.assetDetail?.properties != null) {
+                                                return new ArrayList(params._source.assetDetail.properties.keySet());
+                                            }
+                                            return [];
+                                        """)
+                        )
+                        .size(50)
+                )
+        ));
+
+        NativeQuery query = queryBuilder.build();
 
         SearchHits<PostDocument> searchHits = elasticsearchOperations.search(query, PostDocument.class);
         List<org.springframework.data.elasticsearch.client.elc.Aggregation> aggregations = new ArrayList<>();
@@ -109,18 +147,18 @@ public class SearchServiceImpl implements SearchService {
                 case Sterms:
                     StringTermsAggregate stringTermsAgg = (StringTermsAggregate) innerAgg._get();
                     List<StringTermsBucket> stringBuckets = (List<StringTermsBucket>) stringTermsAgg.buckets()._get();
-                    for (StringTermsBucket bucket : stringBuckets) {
-                        FilterSearchResponse.FilterSearchItem item = FilterSearchResponse.FilterSearchItem
-                                .builder()
-                                .label(bucket.key().stringValue())
-                                .value(bucket.key().stringValue())
-                                .count(bucket.docCount())
-                                .build();
-                        if (!bucket.aggregations().isEmpty()) {
-                            StringTermsAggregate nameAgg = (StringTermsAggregate) bucket.aggregations().get("name")._get();
-                            item.setLabel(nameAgg.buckets().array().get(0).key().stringValue());
-                        }
-                        filterResponseItems.add(item);
+                    if (aggName.equals(PROPERTIES))
+                        extractAggregationWithFetch(filterResponseItems, stringBuckets, keyword, params);
+                    else
+                        extractAggregation(filterResponseItems, stringBuckets);
+                    break;
+                case Filter:
+                    FilterAggregate filterAggregate = (FilterAggregate) innerAgg._get();
+                    Map<String, Aggregate> mpAgg = filterAggregate.aggregations();
+                    for (var x : mpAgg.entrySet()) {
+                        StringTermsAggregate filterTermAggregate = (StringTermsAggregate) x.getValue()._get();
+                        List<StringTermsBucket> filterBucket = (List<StringTermsBucket>) filterTermAggregate.buckets()._get();
+                        extractAggregation(filterResponseItems, filterBucket);
                     }
                     break;
                 case Range:
@@ -148,14 +186,81 @@ public class SearchServiceImpl implements SearchService {
         return responses;
     }
 
+    private void extractAggregation(List<FilterSearchResponse.FilterSearchItem> filterResponseItems, List<StringTermsBucket> stringBuckets) {
+        for (StringTermsBucket bucket : stringBuckets) {
+            FilterSearchResponse.FilterSearchItem item = FilterSearchResponse.FilterSearchItem
+                    .builder()
+                    .label(bucket.key().stringValue())
+                    .value(bucket.key().stringValue())
+                    .count(bucket.docCount())
+                    .build();
+            if (!bucket.aggregations().isEmpty()) {
+                StringTermsAggregate nameAgg = (StringTermsAggregate) bucket.aggregations().get("name")._get();
+                item.setLabel(nameAgg.buckets().array().get(0).key().stringValue());
+            }
+            filterResponseItems.add(item);
+        }
+    }
+
+    private void extractAggregation(List<FilterSearchResponse.FilterSearchItem> filterResponseItems,
+                                    String key,
+                                    List<StringTermsBucket> stringBuckets) {
+        for (StringTermsBucket bucket : stringBuckets) {
+            FilterSearchResponse.FilterSearchItem item = FilterSearchResponse.FilterSearchItem
+                    .builder()
+                    .label(key)
+                    .value(bucket.key().stringValue())
+                    .count(bucket.docCount())
+                    .build();
+            if (!bucket.aggregations().isEmpty()) {
+                StringTermsAggregate nameAgg = (StringTermsAggregate) bucket.aggregations().get("name")._get();
+                item.setLabel(nameAgg.buckets().array().get(0).key().stringValue());
+            }
+            filterResponseItems.add(item);
+        }
+    }
+
+    private void extractAggregationWithFetch(List<FilterSearchResponse.FilterSearchItem> filterResponseItems,
+                                             List<StringTermsBucket> stringBuckets, String keyword, Map<String, String> params) {
+        for (StringTermsBucket bucket : stringBuckets) {
+            String propertyKey = bucket.key().stringValue();
+            NativeQuery query = this.extractQuery(keyword, PAGE, "1", params)
+                    .withAggregation("values_for_key", Aggregation.of(a -> a
+                            .terms(t -> t
+                                    .script(s -> s
+                                            .source(String.format("""
+                                                        def props = params._source.assetDetail?.properties;
+                                                        if (props != null && props.containsKey('%s')) {
+                                                            return props['%s'];
+                                                        }
+                                                        return null;
+                                                    """, propertyKey, propertyKey))
+                                    )
+                                    .size(50)
+                            )
+                    ))
+                    .build();
+            SearchHits<PostDocument> searchHits = elasticsearchOperations.search(query, PostDocument.class);
+            List<org.springframework.data.elasticsearch.client.elc.Aggregation> aggregations = new ArrayList<>();
+            if (searchHits.hasAggregations()) {
+                ((List<ElasticsearchAggregation>) searchHits.getAggregations().aggregations())
+                        .forEach(elsAgg -> aggregations.add(elsAgg.aggregation()));
+            }
+            for (var x : aggregations) {
+                StringTermsAggregate stringTermsAgg = (StringTermsAggregate) x.getAggregate()._get();
+                List<StringTermsBucket> subBuckets = (List<StringTermsBucket>) stringTermsAgg.buckets()._get();
+                extractAggregation(filterResponseItems, propertyKey, subBuckets);
+            }
+        }
+    }
+
     @Override
     public void migrateData() {
-        IndexCoordinates indexCoordinates = IndexCoordinates.of(INDEX_NAME);
         // Check if the index exists
-        IndexOperations indexOperations = elasticsearchRestTemplate.indexOps(indexCoordinates);
-        if (!indexOperations.exists()) {
-
-            indexOperations.create();
+        IndexOperations indexOps = elasticsearchOperations.indexOps(PostDocument.class);
+        if (!indexOps.exists()) {
+            indexOps.create();
+            indexOps.putMapping(indexOps.createMapping(PostDocument.class));
             System.out.println("Index created: " + INDEX_NAME);
         }
         PostDetailResponseList responses = postToSearchServiceBlockingStub.getAllPost(Empty.newBuilder().build());
@@ -188,12 +293,6 @@ public class SearchServiceImpl implements SearchService {
         String order = params != null && !isNullOrEmpty(params.get("order")) ? params.get("order") : null;
 
         var boolQueryBuilder = QueryBuilders.bool();
-        boolQueryBuilder
-                .must(builder -> builder
-                        .term(t -> t
-                                .field("status.keyword")
-                                .value(PostStatus.SHOW.name())));
-
         if (keyword != null && !keyword.isEmpty()) {
             var shouldQuery = QueryBuilders.bool();
             boolQueryBuilder
@@ -215,6 +314,13 @@ public class SearchServiceImpl implements SearchService {
                     .minimumShouldMatch("1");
             boolQueryBuilder.must(shouldQuery.build()._toQuery());
         }
+        if (category != null) {
+            boolQueryBuilder
+                    .must(builder -> builder
+                            .term(t -> t
+                                    .field("assetDetail.category.id.keyword")
+                                    .value(category)));
+        }
 
         NativeQueryBuilder queryBuilder = new NativeQueryBuilder()
                 .withQuery(boolQueryBuilder.build()._toQuery());
@@ -224,9 +330,10 @@ public class SearchServiceImpl implements SearchService {
                 Integer.parseInt(size)));
 
         queryBuilder.withFilter(f -> f.bool(b -> {
-            extractedTermsFilter(province, "assetDetail.province.keyword", b);
-            extractedTermsFilter(type, "type.keyword", b);
-            extractedTermsFilter(category, "assetDetail.category.id.keyword", b);
+            extractedTermsFilter(PostStatus.SHOW.name(), "status", b);
+            extractedTermsFilter(province, "assetDetail.province", b);
+            extractedTermsFilter(ward, "assetDetail.ward", b);
+            extractedTermsFilter(type, "type", b);
             extractedRange(minPrice, maxPrice, "price", b);
             return b;
         }));
@@ -255,7 +362,6 @@ public class SearchServiceImpl implements SearchService {
                         .term(t -> t
                                 .field(field)
                                 .value(value)
-                                .caseInsensitive(true)
                         )
                 );
             }
@@ -294,12 +400,19 @@ public class SearchServiceImpl implements SearchService {
 
     private void extractedRange(Number min, Number max, String field, BoolQuery.Builder bool) {
         if (min != null || max != null) {
-            bool.must(m -> m
-                    .range(r -> r.term(t -> t.field(field)
-                            .from(min != null ? min.toString() : null)
-                            .to(max != null ? max.toString() : null))
-                    )
-            );
+            bool.must(m -> m.range(r -> {
+                r.term(t -> {
+                    t.field(field);
+                    if (min != null) {
+                        t.gte(JsonData.of(min).toString());
+                    }
+                    if (max != null) {
+                        t.lte(JsonData.of(max).toString());
+                    }
+                    return t;
+                });
+                return r;
+            }));
         }
     }
 

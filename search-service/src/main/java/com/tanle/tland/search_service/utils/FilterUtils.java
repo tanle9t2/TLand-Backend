@@ -17,7 +17,7 @@ public class FilterUtils {
     public static final String WARD = "ward";
     public static final String TYPE = "type";
     public static final Map<String, String> AGGS_VALUE = new HashMap<>() {{
-        put("WARD", "Phường");
+        put("ward", "Phường");
         put("Duration(Hours)", "duration");
         put("Level", "level");
         put("Category", "category");
