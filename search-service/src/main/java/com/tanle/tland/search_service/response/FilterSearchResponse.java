@@ -21,7 +21,7 @@ public class FilterSearchResponse {
     @Getter
     public static class FilterSearchItem {
         public String label;
-        public String value;
+        public Object value;
         private Long count;
     }
 

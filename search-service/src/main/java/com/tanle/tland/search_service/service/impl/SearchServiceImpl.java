@@ -37,9 +37,7 @@ import static com.tanle.tland.search_service.utils.AppConstant.INDEX_NAME;
 import static com.tanle.tland.search_service.utils.FilterUtils.*;
 import static com.tanle.tland.search_service.utils.ValidationUtils.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -99,13 +97,13 @@ public class SearchServiceImpl implements SearchService {
                 province -> Aggregation.of(a -> a
                         .filter(fa -> fa
                                 .term(t -> t
-                                        .field("assetDetail.province.keyword")
+                                        .field("assetDetail.province")
                                         .value(province)
                                 )
                         )
                         .aggregations("ward", agg -> agg
                                 .terms(t -> t
-                                        .field("assetDetail.ward.keyword")
+                                        .field("assetDetail.ward")
                                         .size(20)
                                 )
                         )
@@ -150,7 +148,7 @@ public class SearchServiceImpl implements SearchService {
                     if (aggName.equals(PROPERTIES))
                         extractAggregationWithFetch(filterResponseItems, stringBuckets, keyword, params);
                     else
-                        extractAggregation(filterResponseItems, stringBuckets);
+                        extractAggregation(aggName, filterResponseItems, stringBuckets);
                     break;
                 case Filter:
                     FilterAggregate filterAggregate = (FilterAggregate) innerAgg._get();
@@ -158,7 +156,13 @@ public class SearchServiceImpl implements SearchService {
                     for (var x : mpAgg.entrySet()) {
                         StringTermsAggregate filterTermAggregate = (StringTermsAggregate) x.getValue()._get();
                         List<StringTermsBucket> filterBucket = (List<StringTermsBucket>) filterTermAggregate.buckets()._get();
-                        extractAggregation(filterResponseItems, filterBucket);
+
+                        FilterSearchResponse.FilterSearchItem item = FilterSearchResponse.FilterSearchItem
+                                .builder()
+                                .label(aggName)
+                                .build();
+                        filterResponseItems.add(item);
+                        extractSubValue(item, filterBucket);
                     }
                     break;
                 case Range:
@@ -186,25 +190,7 @@ public class SearchServiceImpl implements SearchService {
         return responses;
     }
 
-    private void extractAggregation(List<FilterSearchResponse.FilterSearchItem> filterResponseItems, List<StringTermsBucket> stringBuckets) {
-        for (StringTermsBucket bucket : stringBuckets) {
-            FilterSearchResponse.FilterSearchItem item = FilterSearchResponse.FilterSearchItem
-                    .builder()
-                    .label(bucket.key().stringValue())
-                    .value(bucket.key().stringValue())
-                    .count(bucket.docCount())
-                    .build();
-            if (!bucket.aggregations().isEmpty()) {
-                StringTermsAggregate nameAgg = (StringTermsAggregate) bucket.aggregations().get("name")._get();
-                item.setLabel(nameAgg.buckets().array().get(0).key().stringValue());
-            }
-            filterResponseItems.add(item);
-        }
-    }
-
-    private void extractAggregation(List<FilterSearchResponse.FilterSearchItem> filterResponseItems,
-                                    String key,
-                                    List<StringTermsBucket> stringBuckets) {
+    private void extractAggregation(String key, List<FilterSearchResponse.FilterSearchItem> filterResponseItems, List<StringTermsBucket> stringBuckets) {
         for (StringTermsBucket bucket : stringBuckets) {
             FilterSearchResponse.FilterSearchItem item = FilterSearchResponse.FilterSearchItem
                     .builder()
@@ -218,6 +204,15 @@ public class SearchServiceImpl implements SearchService {
             }
             filterResponseItems.add(item);
         }
+    }
+
+    private void extractSubValue(FilterSearchResponse.FilterSearchItem filterResponseItems,
+                                 List<StringTermsBucket> stringBuckets) {
+        Set<String> value = new HashSet<>();
+        for (StringTermsBucket bucket : stringBuckets) {
+            value.add(bucket.key().stringValue());
+        }
+        filterResponseItems.setValue(value);
     }
 
     private void extractAggregationWithFetch(List<FilterSearchResponse.FilterSearchItem> filterResponseItems,
@@ -240,16 +235,24 @@ public class SearchServiceImpl implements SearchService {
                             )
                     ))
                     .build();
+            FilterSearchResponse.FilterSearchItem item = FilterSearchResponse.FilterSearchItem
+                    .builder()
+                    .label(propertyKey)
+                    .build();
+            filterResponseItems.add(item);
+
             SearchHits<PostDocument> searchHits = elasticsearchOperations.search(query, PostDocument.class);
+
             List<org.springframework.data.elasticsearch.client.elc.Aggregation> aggregations = new ArrayList<>();
             if (searchHits.hasAggregations()) {
                 ((List<ElasticsearchAggregation>) searchHits.getAggregations().aggregations())
                         .forEach(elsAgg -> aggregations.add(elsAgg.aggregation()));
             }
+
             for (var x : aggregations) {
                 StringTermsAggregate stringTermsAgg = (StringTermsAggregate) x.getAggregate()._get();
                 List<StringTermsBucket> subBuckets = (List<StringTermsBucket>) stringTermsAgg.buckets()._get();
-                extractAggregation(filterResponseItems, propertyKey, subBuckets);
+                extractSubValue(item, subBuckets);
             }
         }
     }
@@ -261,7 +264,6 @@ public class SearchServiceImpl implements SearchService {
         if (!indexOps.exists()) {
             indexOps.create();
             indexOps.putMapping(indexOps.createMapping(PostDocument.class));
-            System.out.println("Index created: " + INDEX_NAME);
         }
         PostDetailResponseList responses = postToSearchServiceBlockingStub.getAllPost(Empty.newBuilder().build());
 
@@ -284,13 +286,18 @@ public class SearchServiceImpl implements SearchService {
     private NativeQueryBuilder extractQuery(String keyword, String page, String size, Map<String, String> params) {
         String category = isValidSearchField(params, FilterUtils.CATEGORY) ? params.get(FilterUtils.CATEGORY) : null;
         String province = isValidSearchField(params, FilterUtils.PROVINCE) ? params.get(FilterUtils.PROVINCE) : null;
-        String type = isValidSearchField(params, TYPE) ? params.get(TYPE) : null;
+        String type = isValidSearchField(params, TYPE) ? params.get(TYPE) : PostType.SELL.name();
         String ward = isValidSearchField(params, FilterUtils.WARD) ? params.get(FilterUtils.WARD) : null;
         Double minPrice = isValidSearchField(params, FilterUtils.MIN_PRICE) ? Double.parseDouble(params.get(FilterUtils.MIN_PRICE)) : null;
         Double maxPrice = isValidSearchField(params, FilterUtils.MAX_PRICE) ? Double.parseDouble(params.get(FilterUtils.MAX_PRICE)) : null;
 
-        String sortBy = params != null && !isNullOrEmpty(params.get("sortBy")) ? params.get("sortBy") : null;
-        String order = params != null && !isNullOrEmpty(params.get("order")) ? params.get("order") : null;
+        String sortBy = isValidSearchField(params, ORDER_BY) ? params.get(ORDER_BY) : null;
+        String order = isValidSearchField(params, ORDER) ? params.get(ORDER) : null;
+
+        //get rest param for filtering properties
+        Map<String, String> restParams = params.entrySet().stream()
+                .filter(e -> !KNOW_KEY.contains(e.getKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
         var boolQueryBuilder = QueryBuilders.bool();
         if (keyword != null && !keyword.isEmpty()) {
@@ -335,6 +342,10 @@ public class SearchServiceImpl implements SearchService {
             extractedTermsFilter(ward, "assetDetail.ward", b);
             extractedTermsFilter(type, "type", b);
             extractedRange(minPrice, maxPrice, "price", b);
+
+            for (var x : restParams.entrySet()) {
+                extractedTermsFilter(x.getValue(), String.format("assetDetail.properties.%s", x.getKey()), b);
+            }
             return b;
         }));
 
