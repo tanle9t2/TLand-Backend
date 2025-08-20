@@ -22,13 +22,13 @@ import static com.tanle.tland.post_service.utils.AppConstant.*;
 public class PostController {
     private final PostService postService;
 
-    @GetMapping("/post/{postId}")
+    @GetMapping("/public/post/{postId}")
     public ResponseEntity<PostResponse> getPostByID(@PathVariable("postId") String postId) {
         PostResponse response = postService.findPostById(postId);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/posts")
+    @GetMapping("/public/posts")
     public ResponseEntity<PageResponse> getPosts(
             @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
             @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size,
@@ -37,7 +37,7 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/post/status")
+    @GetMapping("/public/post/status")
     public ResponseEntity<PageResponse<PostOverviewResponse>> getPostsByStatus(
             @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
             @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size,
@@ -64,7 +64,7 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/posts/history/{assetId}")
+    @GetMapping("/public/posts/history/{assetId}")
     public ResponseEntity<PageResponse<PostHistoryResponse>> getHistoryPost(
             @PathVariable("assetId") String assetId,
             @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
@@ -75,7 +75,7 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/posts/status")
+    @GetMapping("/public/posts/status")
     public ResponseEntity<List<StatusCountResponse>> getSummaryPostStatus() {
         String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
         List<StatusCountResponse> response = postService.countStatusPost(userId);

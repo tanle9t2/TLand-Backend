@@ -16,15 +16,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CategoryController {
     private final CategoryService categoryService;
-
     @PostMapping("/category")
     public ResponseEntity<MessageResponse> createCategory(@RequestBody Map<String, String> category) throws BadRequestException {
         MessageResponse response = categoryService.createCategory(category);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/categories")
-    public ResponseEntity<List<CategoryResponse>> getAllCategory() {
+    @GetMapping("/public/categories")
+    public ResponseEntity<List<CategoryResponse>> getAllCategory(String username) {
         List<CategoryResponse> response = categoryService.findAll();
         return ResponseEntity.ok(response);
     }
