@@ -7,12 +7,10 @@ import com.tanle.tland.upload_service.grpc.UploadServiceGrpc;
 import com.tanle.tland.user_service.entity.User;
 import com.tanle.tland.user_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.user_service.mapper.UserMapper;
+import com.tanle.tland.user_service.projection.UserProfile;
 import com.tanle.tland.user_service.repo.UserRepo;
 import com.tanle.tland.user_service.request.UserUpdateRequest;
-import com.tanle.tland.user_service.response.FollowResponse;
-import com.tanle.tland.user_service.response.MessageResponse;
-import com.tanle.tland.user_service.response.PageResponse;
-import com.tanle.tland.user_service.response.UserInfo;
+import com.tanle.tland.user_service.response.*;
 import com.tanle.tland.user_service.service.UserService;
 import io.grpc.stub.StreamObserver;
 import jakarta.transaction.Transactional;
@@ -51,6 +49,15 @@ public class UserServiceImpl implements UserService {
         User user = userRepo.findById(id).orElseThrow(() -> new ResourceNotFoundExeption("Not found user: " + id));
 
         return userMapper.convertToUserInfo(user);
+    }
+
+    @Override
+    public UserProfileResponse findProfileUser(String id) {
+        UserProfile userProfile = userRepo.findProfileUser(id)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found user"));
+
+        return userMapper.convertToResponse(userProfile);
+
     }
 
     @Override

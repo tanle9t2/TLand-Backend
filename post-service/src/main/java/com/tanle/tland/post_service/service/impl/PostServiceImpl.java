@@ -4,8 +4,12 @@ package com.tanle.tland.post_service.service.impl;
 import com.tanle.tland.post_service.entity.*;
 import com.tanle.tland.post_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.post_service.exception.UnauthorizedException;
+import com.tanle.tland.post_service.grpc.UserInfoRequest;
+import com.tanle.tland.post_service.grpc.UserPostInfoResponse;
+import com.tanle.tland.post_service.grpc.UserToPostServiceGrpc;
 import com.tanle.tland.post_service.mapper.AssetMapper;
 import com.tanle.tland.post_service.mapper.PostMapper;
+import com.tanle.tland.post_service.mapper.UserMapper;
 import com.tanle.tland.post_service.projection.PostHistory;
 import com.tanle.tland.post_service.projection.PostOverview;
 import com.tanle.tland.post_service.projection.StatusCount;
@@ -14,10 +18,7 @@ import com.tanle.tland.post_service.repo.PostRepo;
 import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.*;
 import com.tanle.tland.post_service.service.PostService;
-import com.tanle.tland.user_serivce.grpc.AssetRequest;
-import com.tanle.tland.user_serivce.grpc.AssetResponse;
-import com.tanle.tland.user_serivce.grpc.AssetToPostServiceGrpc;
-import com.tanle.tland.user_serivce.grpc.Content;
+import com.tanle.tland.user_serivce.grpc.*;
 import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -42,21 +43,25 @@ public class PostServiceImpl implements PostService {
 
     @GrpcClient("assetServiceGrpc")
     private AssetToPostServiceGrpc.AssetToPostServiceBlockingStub assetToPostServiceBlockingStub;
+    @GrpcClient("userServiceGrpc")
+    private UserToPostServiceGrpc.UserToPostServiceBlockingStub userToPostServiceBlockingStub;
     private final PostRepo postRepo;
     private final CommentRepo commentRepo;
     private final PostMapper postMapper;
     private final AssetMapper assetMapper;
+    private final UserMapper userMapper;
 
 
     @Override
     @Transactional
-    public MessageResponse createPost(PostCreateRequest request) {
+    public MessageResponse createPost(PostCreateRequest request, String userId) {
         assetToPostServiceBlockingStub.checkExisted(AssetRequest.newBuilder()
                 .setId(request.getAssetId())
-                .setUserId(request.getUserId())
+                .setUserId(userId)
                 .build());
 
         Post post = postMapper.convertToEntity(request);
+        post.setUserId(userId);
         post.setStatus(PostStatus.WAITING_PAYMENT);
         postRepo.save(post);
 
@@ -157,8 +162,13 @@ public class PostServiceImpl implements PostService {
                 .setId(post.getAssetId())
                 .build());
 
+        UserPostInfoResponse userInfoResponse = userToPostServiceBlockingStub.getUserInfo(UserInfoRequest.newBuilder()
+                .setId(post.getUserId())
+                .build());
+
         PostResponse postResponse = postMapper.convertToPostDetailResponse(post);
         postResponse.setAssetDetail(assetMapper.convertToResponse(assetResponse));
+        postResponse.setUserInfo(userMapper.convertToResponse(userInfoResponse));
 
         return postResponse;
     }
@@ -216,8 +226,13 @@ public class PostServiceImpl implements PostService {
                             .setId(p.getAssetId())
                             .build());
 
+                    UserPostInfoResponse userInfoResponse = userToPostServiceBlockingStub.getUserInfo(UserInfoRequest.newBuilder()
+                            .setId(p.getUserId())
+                            .build());
+
                     PostResponse postResponse = postMapper.convertToPostDetailResponse(p);
                     postResponse.setAssetDetail(assetMapper.convertToResponse(assetResponse));
+                    postResponse.setUserInfo(userMapper.convertToResponse(userInfoResponse));
                     return postResponse;
                 })
                 .collect(Collectors.toList());
@@ -228,7 +243,7 @@ public class PostServiceImpl implements PostService {
     @Override
     public PageResponse<PostOverviewResponse> findAllByStatus(String status, String kw, String userId, int page, int limit) {
         Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.DESC, "createdAt"));
-        Page<PostOverview> postOverviews = postRepo.findAllByStatus(pageable, kw, PostStatus.valueOf(status));
+        Page<PostOverview> postOverviews = postRepo.findAllByStatus(pageable, userId, kw, PostStatus.valueOf(status));
 
         List<PostOverviewResponse> data = postOverviews.get()
                 .map(p -> {

@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 
+import javax.print.attribute.standard.Media;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -34,4 +35,12 @@ public class AssetDetailResponse {
     private String userId;
     private List<Content> contents;
     private CategoryResponse category;
+
+
+    public static class Media {
+        private String id;
+        private String url;
+        private String name;
+        private LocalDateTime createdAt;
+    }
 }

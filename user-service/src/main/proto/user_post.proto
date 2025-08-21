@@ -1,0 +1,24 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "com.tanle.tland.user_serivce.grpc";
+option java_outer_classname = "UserToPostProto";
+import "google/protobuf/timestamp.proto";
+
+service UserToPostService {
+  rpc getUserInfo(UserInfoRequest) returns (UserPostInfoResponse);
+}
+
+message UserInfoRequest {
+  string id = 1;
+}
+
+message UserPostInfoResponse {
+  string id = 1;
+  string firstName = 2;
+  string lastName = 3;
+  string avtUrl = 4;
+  string email = 5;
+  string phoneNumber = 8;
+  google.protobuf.Timestamp createdAt = 6;
+  google.protobuf.Timestamp lastAccess = 7;
+}

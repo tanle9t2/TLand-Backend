@@ -247,9 +247,6 @@ public class AssetServiceImpl implements AssetService {
 
     @Override
     public MessageResponse updateAsset(AssetCreateRequest request, String userId) throws AccessDeniedException {
-        UserResponse userResponse = serviceBlockingStub.getUserById(UserRequest.newBuilder()
-                .setId(userId)
-                .build());
         Asset asset = assetRepo.findById(request.getId())
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found asset"));
 

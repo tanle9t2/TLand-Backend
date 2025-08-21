@@ -25,13 +25,12 @@ import java.util.Map;
 public class AssetController {
     private final AssetService assetService;
 
-
     @GetMapping("/assets")
     public ResponseEntity<PageResponse<AssetSummaryResponse>> getAssets(
+            @RequestHeader("X-UserId") String userId,
             @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
             @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size
     ) {
-        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
         PageResponse<AssetSummaryResponse> response =
                 assetService.findAll(userId, Integer.parseInt(page), Integer.parseInt(size));
 
@@ -39,8 +38,7 @@ public class AssetController {
     }
 
     @GetMapping("/assets/draft")
-    public ResponseEntity<List<AssetDetailResponse>> getAssetsDraft() {
-        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+    public ResponseEntity<List<AssetDetailResponse>> getAssetsDraft(@RequestHeader("X-UserId") String userId) {
         String type = String.valueOf(AssetType.DRAFT);
         List<AssetDetailResponse> response = assetService.findAssetByType(type, userId);
 
@@ -49,9 +47,10 @@ public class AssetController {
 
 
     @GetMapping("/asset/{assetId}")
-    public ResponseEntity<AssetDetailResponse> getAssetById(@PathVariable("assetId") String id) {
+    public ResponseEntity<AssetDetailResponse> getAssetById(
+            @RequestHeader("X-UserId") String userId,
+            @PathVariable("assetId") String id) {
         AssetDetailResponse response = assetService.findAssetById(id);
-
         return ResponseEntity.ok(response);
     }
 
@@ -64,31 +63,34 @@ public class AssetController {
     }
 
     @PostMapping("/asset")
-    public ResponseEntity<MessageResponse> createAsset(@RequestBody AssetCreateRequest request) {
-        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+    public ResponseEntity<MessageResponse> createAsset(
+            @RequestHeader("X-UserId") String userId,
+            @RequestBody AssetCreateRequest request) {
         MessageResponse response = assetService.createAsset(request, userId);
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/asset")
-    public ResponseEntity<MessageResponse> updateAsset(@RequestBody AssetCreateRequest request) throws AccessDeniedException {
-        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+    public ResponseEntity<MessageResponse> updateAsset(
+            @RequestHeader("X-UserId") String userId,
+            @RequestBody AssetCreateRequest request) throws AccessDeniedException {
         MessageResponse response = assetService.updateAsset(request, userId);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/asset/{assetId}")
-    public ResponseEntity<MessageResponse> deleteAsset(@PathVariable("assetId") String assetId) throws AccessDeniedException {
-        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+    public ResponseEntity<MessageResponse> deleteAsset(
+            @RequestHeader("X-UserId") String userId,
+            @PathVariable("assetId") String assetId) throws AccessDeniedException {
         MessageResponse response = assetService.deleteAsset(assetId, userId);
         return ResponseEntity.ok(response);
     }
 
     @PostMapping("/asset/upload")
     public ResponseEntity<MessageResponse> UploadAssetMedia(
+            @RequestHeader("X-UserId") String userId,
             @RequestParam(value = "assetId", required = false) String id,
             @RequestParam(value = "file") MultipartFile file) {
-        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
         MessageResponse response = assetService.uploadMedia(userId, UploadImageRequest.builder()
                 .assetId(id)
                 .file(file)

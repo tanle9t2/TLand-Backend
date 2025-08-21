@@ -4,9 +4,7 @@ import com.tanle.tland.user_serivce.grpc.UserRequest;
 import com.tanle.tland.user_serivce.grpc.UserResponse;
 import com.tanle.tland.user_serivce.grpc.UserToAssetServiceGrpc;
 import com.tanle.tland.user_service.entity.User;
-import com.tanle.tland.user_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.user_service.repo.UserRepo;
-import com.tanle.tland.user_service.service.UserService;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +15,7 @@ import java.util.Optional;
 
 @GrpcService
 @RequiredArgsConstructor
-public class UserServiceGrpcImpl extends UserToAssetServiceGrpc.UserToAssetServiceImplBase {
+public class UserToAssetServiceGrpcImpl extends UserToAssetServiceGrpc.UserToAssetServiceImplBase {
 
     private final UserRepo userRepo;
 

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 
 public interface PostService {
-    MessageResponse createPost(PostCreateRequest request);
+    MessageResponse createPost(PostCreateRequest request, String userId);
 
     MessageResponse updatePost(String postId, String userId, PostCreateRequest request) throws AccessDeniedException;
 

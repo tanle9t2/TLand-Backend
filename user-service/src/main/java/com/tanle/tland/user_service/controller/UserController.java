@@ -1,10 +1,8 @@
 package com.tanle.tland.user_service.controller;
 
+import com.tanle.tland.user_service.projection.UserProfile;
 import com.tanle.tland.user_service.request.UserUpdateRequest;
-import com.tanle.tland.user_service.response.FollowResponse;
-import com.tanle.tland.user_service.response.MessageResponse;
-import com.tanle.tland.user_service.response.PageResponse;
-import com.tanle.tland.user_service.response.UserInfo;
+import com.tanle.tland.user_service.response.*;
 import com.tanle.tland.user_service.service.UserService;
 import jakarta.ws.rs.GET;
 import lombok.NoArgsConstructor;
@@ -31,6 +29,13 @@ public class UserController {
 
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/user/profile")
+    public ResponseEntity<UserProfileResponse> getProfileUser(@RequestHeader("X-UserId") String id) {
+        UserProfileResponse response = userService.findProfileUser(id);
+        return ResponseEntity.ok(response);
+    }
+
 
     @GetMapping("/users")
     public ResponseEntity<PageResponse<UserInfo>> getAll(

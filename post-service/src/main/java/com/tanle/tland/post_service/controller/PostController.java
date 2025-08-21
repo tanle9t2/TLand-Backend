@@ -37,34 +37,36 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/public/post/status")
+    @GetMapping("/post/status")
     public ResponseEntity<PageResponse<PostOverviewResponse>> getPostsByStatus(
+            @RequestHeader("X-UserId") String userId,
             @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
             @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size,
             @RequestParam(value = "status") String status,
             @RequestParam(value = "kw", defaultValue = "") String keyword) {
-        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
         PageResponse<PostOverviewResponse> response = postService.findAllByStatus(status, keyword, userId,
                 Integer.parseInt(page), Integer.parseInt(size));
         return ResponseEntity.ok(response);
     }
 
     @PutMapping("/post/{postId}")
-    public ResponseEntity<MessageResponse> updatePost(@PathVariable("postId") String postId,
+    public ResponseEntity<MessageResponse> updatePost(
+            @RequestHeader("X-UserId") String userId,
+            @PathVariable("postId") String postId,
                                                       @RequestBody PostCreateRequest request) throws AccessDeniedException {
-        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
         MessageResponse response = postService.updatePost(postId, userId, request);
         return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/post/{postId}")
-    public ResponseEntity<MessageResponse> deletePost(@PathVariable("postId") String postId) {
-        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+    public ResponseEntity<MessageResponse> deletePost(
+            @RequestHeader("X-UserId") String userId,
+            @PathVariable("postId") String postId) {
         MessageResponse response = postService.inActivePost(userId, postId);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/public/posts/history/{assetId}")
+    @GetMapping("/posts/history/{assetId}")
     public ResponseEntity<PageResponse<PostHistoryResponse>> getHistoryPost(
             @PathVariable("assetId") String assetId,
             @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
@@ -75,17 +77,20 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/public/posts/status")
-    public ResponseEntity<List<StatusCountResponse>> getSummaryPostStatus() {
-        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
+    @GetMapping("/posts/status")
+    public ResponseEntity<List<StatusCountResponse>> getSummaryPostStatus(
+            @RequestHeader("X-UserId") String userId
+    ) {
         List<StatusCountResponse> response = postService.countStatusPost(userId);
         return ResponseEntity.ok(response);
     }
 
 
     @PostMapping("/post")
-    public ResponseEntity<MessageResponse> createPost(@RequestBody PostCreateRequest request) {
-        MessageResponse response = postService.createPost(request);
+    public ResponseEntity<MessageResponse> createPost(
+            @RequestHeader("X-UserId") String userId,
+            @RequestBody PostCreateRequest request) {
+        MessageResponse response = postService.createPost(request,userId);
 
         return ResponseEntity.ok(response);
     }

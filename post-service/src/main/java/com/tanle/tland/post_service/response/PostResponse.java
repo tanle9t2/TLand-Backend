@@ -23,5 +23,7 @@ public class PostResponse {
     private String userId;
     private String status;
     private AssetDetailResponse assetDetail;
+    private UserPostInfoResponse userInfo;
+
 
 }

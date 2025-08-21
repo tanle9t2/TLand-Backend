@@ -29,8 +29,8 @@ public class User {
     private String id;
     @Column(name = "username")
     private String username;
-    @Column(name = "password")
-    private String password;
+    @Column(name = "phone_number")
+    private String phoneNumber;
     @Column(name = "email")
     private String email;
     @Column(name = "first_name")
@@ -65,11 +65,5 @@ public class User {
     @JsonIgnore
     private Set<User> following;
 
-    @ManyToMany
-    @JoinTable(
-            name = "user_role",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Role> roles;
 
 }

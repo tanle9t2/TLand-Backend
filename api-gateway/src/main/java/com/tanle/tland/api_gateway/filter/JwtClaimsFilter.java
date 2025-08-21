@@ -28,9 +28,10 @@ public class JwtClaimsFilter implements GlobalFilter {
                         List<String> roles = clientAccess != null
                                 ? (List<String>) clientAccess.get("roles")
                                 : List.of();
-
+                        String userId = jwt.getClaimAsString("sub");
                         ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                                 .header("X-Username", username)
+                                .header("X-UserId", userId)
                                 .header("X-Roles", String.join(",", roles))
                                 .build();
 

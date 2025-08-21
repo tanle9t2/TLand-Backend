@@ -16,7 +16,6 @@ public class PostCreateRequest {
     private String title;
     private String description;
     private String assetId;
-    private String userId;
     private double price;
     private String type;
 }
