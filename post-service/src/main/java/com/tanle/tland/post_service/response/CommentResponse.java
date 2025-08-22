@@ -14,5 +14,17 @@ import java.time.LocalDateTime;
 public class CommentResponse {
     private String id;
     private String content;
+    private UserInfo userInfo;
     private LocalDateTime createdAt;
+
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @Builder
+    @Data
+    public static class UserInfo {
+        private String id;
+        private String firstName;
+        private String lastName;
+        private String avtUrl;
+    }
 }

@@ -17,6 +17,7 @@ import com.tanle.tland.post_service.repo.CommentRepo;
 import com.tanle.tland.post_service.repo.PostRepo;
 import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.*;
+import com.tanle.tland.post_service.response.PostDetailResponse;
 import com.tanle.tland.post_service.service.PostService;
 import com.tanle.tland.user_serivce.grpc.*;
 import jakarta.ws.rs.ForbiddenException;
@@ -154,23 +155,13 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostResponse findPostById(String postId) {
+    public PostDetailResponse findPostById(String postId) {
         Post post = postRepo.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
 
-        AssetResponse assetResponse = assetToPostServiceBlockingStub.getAssetDetail(AssetRequest.newBuilder()
-                .setId(post.getAssetId())
-                .build());
+        PostDetailResponse postDetailResponse = postMapper.convertToResponse(post);
 
-        UserPostInfoResponse userInfoResponse = userToPostServiceBlockingStub.getUserInfo(UserInfoRequest.newBuilder()
-                .setId(post.getUserId())
-                .build());
-
-        PostResponse postResponse = postMapper.convertToPostDetailResponse(post);
-        postResponse.setAssetDetail(assetMapper.convertToResponse(assetResponse));
-        postResponse.setUserInfo(userMapper.convertToResponse(userInfoResponse));
-
-        return postResponse;
+        return postDetailResponse;
     }
 
     @Override
@@ -271,12 +262,12 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public MessageResponse createComment(String postId, Map<String, String> content) {
+    public MessageResponse createComment(String postId, String userId, Map<String, String> content) {
         Post post = postRepo.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
 
         Comment comment = Comment.builder()
-                .userId(content.get("userId"))
+                .userId(userId)
                 .createdAt(LocalDateTime.now())
                 .content(content.get("content"))
                 .build();
@@ -287,7 +278,9 @@ public class PostServiceImpl implements PostService {
         return MessageResponse.builder()
                 .message("Successfully create comment")
                 .data(Map.of(
-                        "id", comment.getId()
+                        "id", comment.getId(),
+                        "content", comment.getContent(),
+                        "createdAt", comment.getCreatedAt()
                 ))
                 .status(HttpStatus.CREATED)
                 .build();
@@ -324,11 +317,28 @@ public class PostServiceImpl implements PostService {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<Comment> comments = commentRepo.findAllByPostId(postId, pageable);
         List<CommentResponse> commentResponses = comments.get()
-                .map(c -> CommentResponse.builder()
-                        .id(c.getId())
-                        .content(c.getContent())
-                        .createdAt(c.getCreatedAt())
-                        .build())
+                .map(c -> {
+                    CommentResponse commentResponse = CommentResponse.builder()
+                            .id(c.getId())
+                            .content(c.getContent())
+                            .createdAt(c.getCreatedAt())
+                            .build();
+
+                    UserPostInfoResponse userInfoResponse = userToPostServiceBlockingStub.
+                            getUserInfo(UserInfoRequest.newBuilder()
+                                    .setId(c.getUserId())
+                                    .build());
+
+                    commentResponse.setUserInfo(CommentResponse.UserInfo.builder()
+                            .firstName(userInfoResponse.getFirstName())
+                            .lastName(userInfoResponse.getLastName())
+                            .avtUrl(userInfoResponse.getAvtUrl())
+                            .id(userInfoResponse.getId())
+                            .build());
+
+                    return commentResponse;
+
+                })
                 .collect(Collectors.toList());
 
         return PageResponse.<CommentResponse>builder()
@@ -337,6 +347,7 @@ public class PostServiceImpl implements PostService {
                 .last(comments.isLast())
                 .totalElements(comments.getTotalElements())
                 .page(comments.getNumber())
+                .totalPages(comments.getTotalPages())
                 .build();
     }
 

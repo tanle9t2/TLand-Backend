@@ -23,8 +23,8 @@ public class PostController {
     private final PostService postService;
 
     @GetMapping("/public/post/{postId}")
-    public ResponseEntity<PostResponse> getPostByID(@PathVariable("postId") String postId) {
-        PostResponse response = postService.findPostById(postId);
+    public ResponseEntity<PostDetailResponse> getPostByID(@PathVariable("postId") String postId) {
+        PostDetailResponse response = postService.findPostById(postId);
         return ResponseEntity.ok(response);
     }
 
@@ -113,7 +113,7 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/post/{postId}/comments")
+    @GetMapping("public/post/{postId}/comments")
     public ResponseEntity<PageResponse> getComments(
             @PathVariable("postId") String postId,
             @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
@@ -125,9 +125,10 @@ public class PostController {
 
     @PostMapping("/post/{postId}/comment")
     public ResponseEntity<MessageResponse> createComment(
+            @RequestHeader("X-UserId") String userId,
             @PathVariable("postId") String postId,
             @RequestBody Map<String, String> params) {
-        MessageResponse response = postService.createComment(postId, params);
+        MessageResponse response = postService.createComment(postId,userId, params);
 
         return ResponseEntity.ok(response);
     }

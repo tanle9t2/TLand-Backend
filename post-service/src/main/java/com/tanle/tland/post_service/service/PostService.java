@@ -20,7 +20,7 @@ public interface PostService {
 
     MessageResponse unlikePost(String userId, String postId);
 
-    PostResponse findPostById(String postId);
+    PostDetailResponse findPostById(String postId);
 
     PageResponse<PostHistoryResponse> findHistoryPost(String assetId, String userId, int page, int size);
 
@@ -30,7 +30,7 @@ public interface PostService {
 
     PageResponse<PostOverviewResponse> findAllByStatus(String status, String kw, String userId, int page, int limit);
 
-    MessageResponse createComment(String postId, Map<String, String> content);
+    MessageResponse createComment(String postId, String userId, Map<String, String> content);
 
     MessageResponse deleteComment(String postId, Map<String, String> content);
 
