@@ -27,3 +27,11 @@ grpc:
   server:
     port: 9091
     enable-reflection: true
+
+keycloak:
+  auth-server-url: http://localhost:8443
+  realm: TLand
+  admin:
+    client-id: admin-cli
+    username: admin
+    password: admin

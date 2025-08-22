@@ -1,9 +1,11 @@
 package com.tanle.tland.user_service.controller;
 
 import com.tanle.tland.user_service.projection.UserProfile;
+import com.tanle.tland.user_service.request.UserSignUpRequest;
 import com.tanle.tland.user_service.request.UserUpdateRequest;
 import com.tanle.tland.user_service.response.*;
 import com.tanle.tland.user_service.service.UserService;
+import com.tanle.tland.user_service.service.impl.KeycloakService;
 import jakarta.ws.rs.GET;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -18,13 +20,22 @@ import static com.tanle.tland.user_service.utils.AppConstant.*;
 
 @RestController
 @RequestMapping(value = "/api/v1")
-
+@RequiredArgsConstructor
 public class UserController {
-    @Autowired
-    private UserService userService;
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<UserInfo> getUserById(@PathVariable("userId") String id) {
+    private final UserService userService;
+    private final KeycloakService keycloakService;
+
+    @PostMapping("/user/sign-up")
+    public ResponseEntity<MessageResponse> signUpUser(@RequestBody UserSignUpRequest request) {
+        keycloakService.createUser(request);
+        MessageResponse messageResponse = userService.createUser(request);
+
+        return ResponseEntity.ok(messageResponse);
+    }
+
+    @GetMapping("/user")
+    public ResponseEntity<UserInfo> getUserById(@RequestHeader("X-UserId") String id) {
         UserInfo response = userService.findUserById(id);
 
         return ResponseEntity.ok(response);
@@ -46,9 +57,9 @@ public class UserController {
         return ResponseEntity.ok(pageResponse);
     }
 
-    @PutMapping("/user/{userId}")
+    @PutMapping("/user")
     public ResponseEntity<MessageResponse> updateProfile(
-            @PathVariable("userId") String id,
+            @RequestHeader("X-UserId") String id,
             @RequestBody UserUpdateRequest request) {
         MessageResponse response = userService.updateProfile(id, request);
         return ResponseEntity.ok(response);
@@ -61,9 +72,9 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = "/user/{userId}/update-avt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/user/update-avt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<MessageResponse> updateAvt(
-            @PathVariable("userId") String id,
+            @RequestHeader("X-UserId") String id,
             @RequestParam MultipartFile file) {
         MessageResponse response = userService.updateAvt(id, file);
         return ResponseEntity.ok(response);

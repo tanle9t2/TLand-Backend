@@ -15,26 +15,17 @@ import java.time.LocalDateTime;
 @Builder
 public class UserInfo {
     private String id;
-
     private String username;
-
-    private String password;
-
     private String email;
-
     private String firstName;
-
     private String lastName;
-
     private LocalDate dob;
-
     private LocalDateTime createdAt;
-
     private LocalDateTime lastAccess;
-
     private boolean isActive;
-
+    private String phoneNumber;
     private boolean sex;
-
+    private String taxCode;
+    private String cid;
     private String avtUrl;
 }

@@ -13,10 +13,12 @@ import java.time.LocalDate;
 @Builder
 public class UserUpdateRequest {
     private String username;
-    private String password;
     private String email;
     private String firstName;
     private String lastName;
     private LocalDate dob;
+    private String phoneNumber;
+    private String taxCode;
+    private String cid;
     private boolean sex;
 }

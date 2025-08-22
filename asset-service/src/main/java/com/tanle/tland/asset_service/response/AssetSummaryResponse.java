@@ -15,6 +15,7 @@ public class AssetSummaryResponse {
     private String id;
     private String address;
     private String ward;
+    private boolean isAttachedPost;
     private String province;
     private double landArea;
     private double usableArea;

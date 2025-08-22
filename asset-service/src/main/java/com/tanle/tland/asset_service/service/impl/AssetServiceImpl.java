@@ -85,7 +85,15 @@ public class AssetServiceImpl implements AssetService {
         Pageable pageable = PageRequest.of(page, size);
         Page<AssetSummary> assetPage = assetRepo.findAllByUserIdAndType(userId, AssetType.PERSIST, pageable);
         List<AssetSummaryResponse> data = assetPage.get()
-                .map(a -> assetMapper.convertToAssetSummaryResponse(a))
+                .map(a -> {
+                    AssetSummaryResponse response = assetMapper.convertToAssetSummaryResponse(a);
+                    PostCheckAttachResponse isAttached = postToAssetServiceBlockingStub.checkAttachedPost(PostCheckAttachRequest.newBuilder()
+                            .setId(a.getId())
+                            .build());
+
+                    response.setAttachedPost(isAttached.getIsAttached());
+                    return response;
+                })
                 .collect(Collectors.toList());
 
         return PageResponse.<AssetSummaryResponse>builder()

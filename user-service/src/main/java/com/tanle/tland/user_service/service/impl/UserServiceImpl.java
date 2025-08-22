@@ -9,6 +9,7 @@ import com.tanle.tland.user_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.user_service.mapper.UserMapper;
 import com.tanle.tland.user_service.projection.UserProfile;
 import com.tanle.tland.user_service.repo.UserRepo;
+import com.tanle.tland.user_service.request.UserSignUpRequest;
 import com.tanle.tland.user_service.request.UserUpdateRequest;
 import com.tanle.tland.user_service.response.*;
 import com.tanle.tland.user_service.service.UserService;
@@ -39,8 +40,6 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
     private final UserRepo userRepo;
     private final UserMapper userMapper;
-
-
     @GrpcClient("uploadServiceGrpc")
     private UploadServiceGrpc.UploadServiceStub uploadServiceStub;
 
@@ -49,6 +48,28 @@ public class UserServiceImpl implements UserService {
         User user = userRepo.findById(id).orElseThrow(() -> new ResourceNotFoundExeption("Not found user: " + id));
 
         return userMapper.convertToUserInfo(user);
+    }
+
+    @Override
+    @Transactional
+    public MessageResponse createUser(UserSignUpRequest request) {
+        User user = User.builder()
+                .id(request.getUserId())
+                .firstName(request.getFirstName())
+                .lastName(request.getLastName())
+                .createdAt(LocalDateTime.now())
+                .email(request.getEmail())
+                .isActive(true)
+                .sex(true)
+                .username(request.getUsername())
+                .build();
+
+        userRepo.save(user);
+        return MessageResponse.builder()
+                .data(request)
+                .message("Successfully sign up")
+                .status(HttpStatus.CREATED)
+                .build();
     }
 
     @Override

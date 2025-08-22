@@ -1,5 +1,6 @@
 package com.tanle.tland.user_service.service;
 
+import com.tanle.tland.user_service.request.UserSignUpRequest;
 import com.tanle.tland.user_service.request.UserUpdateRequest;
 import com.tanle.tland.user_service.response.*;
 import org.springframework.data.domain.Page;
@@ -9,8 +10,10 @@ import java.util.List;
 
 public interface UserService {
     UserInfo findUserById(String id);
-    UserProfileResponse findProfileUser(String id);
 
+    MessageResponse createUser(UserSignUpRequest request);
+
+    UserProfileResponse findProfileUser(String id);
 
     PageResponse<UserInfo> findAdd(int page, int limit);
 

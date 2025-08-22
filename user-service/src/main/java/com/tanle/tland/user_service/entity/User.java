@@ -24,7 +24,6 @@ import java.util.Set;
 @Data
 public class User {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "user_id")
     private String id;
     @Column(name = "username")
@@ -49,6 +48,12 @@ public class User {
     private boolean sex;
     @Column(name = "avt_url")
     private String avtUrl;
+
+    @Column(name = "tax_code")
+    private String taxCode;
+
+    @Column(name = "cid")
+    private String cid;
     @ManyToOne
     @JoinColumn(name = "plan_id")
     private Plan plan;

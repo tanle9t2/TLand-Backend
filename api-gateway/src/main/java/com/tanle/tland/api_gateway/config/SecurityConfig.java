@@ -25,6 +25,7 @@ public class SecurityConfig {
                         .pathMatchers("/post-service/api/v1/public/**").permitAll()
                         .pathMatchers("/user-service/api/v1/public/**").permitAll()
                         .pathMatchers("/search-service/api/v1/**").permitAll()
+                        .pathMatchers("/user-service/api/v1/user/sign-up").permitAll()
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
                         .anyExchange().authenticated()
                 )
