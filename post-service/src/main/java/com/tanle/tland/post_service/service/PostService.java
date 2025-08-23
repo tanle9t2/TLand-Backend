@@ -14,7 +14,9 @@ public interface PostService {
 
     MessageResponse inActivePost(String userId, String postId);
 
-    MessageResponse acceptPost(String userId, String postId);
+    MessageResponse acceptPost(List<String> role, String postId);
+
+    MessageResponse rejectPost(List<String> role, String postId);
 
     MessageResponse likePost(String userId, String postId);
 
@@ -29,6 +31,9 @@ public interface PostService {
     List<PostResponse> findAll();
 
     PageResponse<PostOverviewResponse> findAllByStatus(String status, String kw, String userId, int page, int limit);
+
+    PageResponse<PostAdminOverviewResponse> findAllByStatus(String status, String kw, int page, int limit,
+                                                            String orderBy, String orderDirection);
 
     MessageResponse createComment(String postId, String userId, Map<String, String> content);
 

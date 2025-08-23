@@ -23,10 +23,10 @@ public class JwtClaimsFilter implements GlobalFilter {
                     if (auth.getPrincipal() instanceof Jwt jwt) {
                         String username = jwt.getClaimAsString("preferred_username");
 
-                        Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
-                        Map<String, Object> clientAccess = (Map<String, Object>) resourceAccess.get("tland-react");
-                        List<String> roles = clientAccess != null
-                                ? (List<String>) clientAccess.get("roles")
+                        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+
+                        List<String> roles = realmAccess != null
+                                ? (List<String>) realmAccess.get("roles")
                                 : List.of();
                         String userId = jwt.getClaimAsString("sub");
                         ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()

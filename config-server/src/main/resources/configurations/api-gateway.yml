@@ -48,4 +48,4 @@ management:
         include: health,info,gateway
 app:
   cors:
-    allowed-origin: http://localhost:5173/
+    allowed-origins: http://localhost:5173,http://localhost:5174

@@ -1,10 +1,9 @@
 package com.tanle.tland.post_service.controller;
 
-import com.google.api.Page;
-import com.tanle.tland.post_service.entity.PostStatus;
 import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.*;
 import com.tanle.tland.post_service.service.PostService;
+import com.tanle.tland.post_service.response.PostDetailResponse;
 import jakarta.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +36,19 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/post/admin")
+    public ResponseEntity<PageResponse<PostAdminOverviewResponse>> getPostsByStatus(
+            @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
+            @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size,
+            @RequestParam(value = "orderBy", required = false, defaultValue = ORDER_FIELD_DEFAULT) String orderBy,
+            @RequestParam(value = "orderDirection", required = false, defaultValue = ORDER_DIRECTION_DEFAULT) String orderDirection,
+            @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "kw", defaultValue = "") String keyword) {
+        PageResponse<PostAdminOverviewResponse> response = postService.findAllByStatus(status, keyword,
+                Integer.parseInt(page), Integer.parseInt(size), orderBy, orderDirection);
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/post/status")
     public ResponseEntity<PageResponse<PostOverviewResponse>> getPostsByStatus(
             @RequestHeader("X-UserId") String userId,
@@ -53,7 +65,7 @@ public class PostController {
     public ResponseEntity<MessageResponse> updatePost(
             @RequestHeader("X-UserId") String userId,
             @PathVariable("postId") String postId,
-                                                      @RequestBody PostCreateRequest request) throws AccessDeniedException {
+            @RequestBody PostCreateRequest request) throws AccessDeniedException {
         MessageResponse response = postService.updatePost(postId, userId, request);
         return ResponseEntity.ok(response);
     }
@@ -90,7 +102,25 @@ public class PostController {
     public ResponseEntity<MessageResponse> createPost(
             @RequestHeader("X-UserId") String userId,
             @RequestBody PostCreateRequest request) {
-        MessageResponse response = postService.createPost(request,userId);
+        MessageResponse response = postService.createPost(request, userId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/post/{postId}/accept")
+    public ResponseEntity<MessageResponse> acceptPost(
+            @RequestHeader("X-Roles") List<String> roles,
+            @PathVariable("postId") String postId) {
+        MessageResponse response = postService.acceptPost(roles, postId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/post/{postId}/reject")
+    public ResponseEntity<MessageResponse> rejectPost(
+            @RequestHeader("X-Roles") List<String> roles,
+            @PathVariable("postId") String postId) {
+        MessageResponse response = postService.rejectPost(roles, postId);
 
         return ResponseEntity.ok(response);
     }
@@ -128,7 +158,7 @@ public class PostController {
             @RequestHeader("X-UserId") String userId,
             @PathVariable("postId") String postId,
             @RequestBody Map<String, String> params) {
-        MessageResponse response = postService.createComment(postId,userId, params);
+        MessageResponse response = postService.createComment(postId, userId, params);
 
         return ResponseEntity.ok(response);
     }

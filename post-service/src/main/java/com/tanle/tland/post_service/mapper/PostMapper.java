@@ -5,6 +5,7 @@ import com.tanle.tland.post_service.mapper.decorator.PostMapperDecorator;
 import com.tanle.tland.post_service.projection.PostHistory;
 import com.tanle.tland.post_service.projection.PostOverview;
 import com.tanle.tland.post_service.request.PostCreateRequest;
+import com.tanle.tland.post_service.response.PostAdminOverviewResponse;
 import com.tanle.tland.post_service.response.PostHistoryResponse;
 import com.tanle.tland.post_service.response.PostOverviewResponse;
 import com.tanle.tland.post_service.response.PostResponse;
@@ -21,6 +22,8 @@ public interface PostMapper {
     void updatePost(PostCreateRequest request, @MappingTarget Post post);
 
     PostOverviewResponse convertToResponse(PostOverview postOverview);
+
+    PostAdminOverviewResponse convertToAdminResponse(PostOverview postOverview);
 
     PostHistoryResponse convertToResponse(PostHistory postHistory);
 

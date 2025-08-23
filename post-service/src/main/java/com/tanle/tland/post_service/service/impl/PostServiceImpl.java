@@ -107,14 +107,31 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public MessageResponse acceptPost(String userId, String postId) {
+    public MessageResponse acceptPost(List<String> roles, String postId) {
         Post post = postRepo.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
 
-        if (!post.getUserId().equals(userId))
+        if (roles == null || !roles.contains(UserRole.ROLE_ADMIN.name()))
             throw new UnauthorizedException("Don't have permission for this resource");
 
         post.setStatus(PostStatus.SHOW);
+        postRepo.save(post);
+        return MessageResponse.builder()
+                .message("Successfully accept post")
+                .status(HttpStatus.OK)
+                .build();
+    }
+
+    @Override
+    public MessageResponse rejectPost(List<String> roles, String postId) {
+        Post post = postRepo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
+
+        if (roles == null || !roles.contains(UserRole.ROLE_ADMIN.name()))
+            throw new UnauthorizedException("Don't have permission for this resource");
+
+        post.setStatus(PostStatus.REJECT);
+        postRepo.save(post);
         return MessageResponse.builder()
                 .message("Successfully accept post")
                 .status(HttpStatus.OK)
@@ -241,7 +258,7 @@ public class PostServiceImpl implements PostService {
                     PostOverviewResponse overviewResponse = postMapper.convertToResponse(p);
                     Content content = assetToPostServiceBlockingStub.getPoster(
                             AssetRequest.newBuilder()
-                                    .setUserId(userId)
+                                    .setUserId(p.getUserId())
                                     .setId(p.getAssetId())
                                     .build()
                     );
@@ -251,6 +268,38 @@ public class PostServiceImpl implements PostService {
 
 
         return PageResponse.<PostOverviewResponse>builder()
+                .content(data)
+                .last(postOverviews.isLast())
+                .totalPages(postOverviews.getTotalPages())
+                .page(page)
+                .size(postOverviews.getSize())
+                .totalElements(postOverviews.getTotalElements())
+                .build();
+    }
+
+    @Override
+    public PageResponse<PostAdminOverviewResponse> findAllByStatus(String status, String kw, int page, int limit
+            , String orderBy, String orderDirection) {
+        Pageable pageable = PageRequest.of(page, limit, Sort.by(Sort.Direction.valueOf(orderDirection.toUpperCase())
+                , orderBy));
+        PostStatus postStatus = status != null ? PostStatus.valueOf(status) : null;
+        Page<PostOverview> postOverviews = postRepo.findAllByStatus(pageable, null, kw, postStatus);
+
+        List<PostAdminOverviewResponse> data = postOverviews.get()
+                .map(p -> {
+                    PostAdminOverviewResponse overviewResponse = postMapper.convertToAdminResponse(p);
+
+                    UserPostInfoResponse userInfoResponse = userToPostServiceBlockingStub.getUserInfo(
+                            UserInfoRequest.newBuilder()
+                                    .setId(p.getUserId())
+                                    .build()
+                    );
+                    overviewResponse.setUserInfo(userMapper.convertToResponse(userInfoResponse));
+                    return overviewResponse;
+                }).collect(Collectors.toList());
+
+
+        return PageResponse.<PostAdminOverviewResponse>builder()
                 .content(data)
                 .last(postOverviews.isLast())
                 .totalPages(postOverviews.getTotalPages())

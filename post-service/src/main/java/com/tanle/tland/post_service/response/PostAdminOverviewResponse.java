@@ -5,24 +5,18 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
 import java.time.LocalDateTime;
-
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PostDetailResponse {
+public class PostAdminOverviewResponse {
     private String id;
     private String title;
-    private String description;
-    private String createdAt;
     private double price;
+    private LocalDateTime createdAt;
     private String type;
-    private LocalDateTime lastUpdated;
     private String status;
-
-    private AssetDetailResponse assetDetail;
     private UserPostInfoResponse userInfo;
 }
