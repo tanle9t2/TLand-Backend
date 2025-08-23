@@ -1,0 +1,19 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "com.tanle.tland.payment_service.grpc";
+option java_outer_classname = "PaymentProto";
+
+
+service PaymentService {
+  rpc getPaymentUrl(PaymentUrlRequest) returns (PaymentUrlResponse);
+}
+
+message PaymentUrlRequest {
+  string txnRef = 1; //orderId
+  int64  amount = 2; //totalOrderIdAmount
+  string ipAddress = 3; //ipaddress
+}
+
+message PaymentUrlResponse {
+  string vnpUrl = 1;
+}

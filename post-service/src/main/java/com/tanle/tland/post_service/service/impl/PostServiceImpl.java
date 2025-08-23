@@ -1,6 +1,9 @@
 package com.tanle.tland.post_service.service.impl;
 
 
+import com.tanle.tland.payment_service.grpc.PaymentServiceGrpc;
+import com.tanle.tland.payment_service.grpc.PaymentUrlRequest;
+import com.tanle.tland.payment_service.grpc.PaymentUrlResponse;
 import com.tanle.tland.post_service.entity.*;
 import com.tanle.tland.post_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.post_service.exception.UnauthorizedException;
@@ -19,7 +22,9 @@ import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.*;
 import com.tanle.tland.post_service.response.PostDetailResponse;
 import com.tanle.tland.post_service.service.PostService;
+import com.tanle.tland.post_service.utils.Helper;
 import com.tanle.tland.user_serivce.grpc.*;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -46,6 +51,8 @@ public class PostServiceImpl implements PostService {
     private AssetToPostServiceGrpc.AssetToPostServiceBlockingStub assetToPostServiceBlockingStub;
     @GrpcClient("userServiceGrpc")
     private UserToPostServiceGrpc.UserToPostServiceBlockingStub userToPostServiceBlockingStub;
+    @GrpcClient("paymentServiceGrpc")
+    private PaymentServiceGrpc.PaymentServiceBlockingStub paymentServiceBlockingStub;
     private final PostRepo postRepo;
     private final CommentRepo commentRepo;
     private final PostMapper postMapper;
@@ -55,7 +62,7 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public MessageResponse createPost(PostCreateRequest request, String userId) {
+    public MessageResponse createPost(PostCreateRequest request, String userId, HttpServletRequest httpServletRequest) {
         assetToPostServiceBlockingStub.checkExisted(AssetRequest.newBuilder()
                 .setId(request.getAssetId())
                 .setUserId(userId)
@@ -65,10 +72,20 @@ public class PostServiceImpl implements PostService {
         post.setUserId(userId);
         post.setStatus(PostStatus.WAITING_PAYMENT);
         postRepo.save(post);
+        postRepo.flush();
+
+        PaymentUrlResponse paymentUrlResponse = paymentServiceBlockingStub.getPaymentUrl(
+                PaymentUrlRequest.newBuilder()
+                        .setAmount(200000)
+                        .setIpAddress(Helper.getIpAddress(httpServletRequest))
+                        .setTxnRef(post.getId())
+                        .build()
+        );
 
         return MessageResponse.builder()
                 .message("Successfully create post")
                 .status(HttpStatus.CREATED)
+                .data(Map.of("paymentUrl", paymentUrlResponse.getVnpUrl()))
                 .build();
     }
 

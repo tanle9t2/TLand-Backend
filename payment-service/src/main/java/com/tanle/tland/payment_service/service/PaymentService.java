@@ -3,11 +3,16 @@ package com.tanle.tland.payment_service.service;
 import com.tanle.tland.payment_service.PaymentRepo;
 import com.tanle.tland.payment_service.entity.Payment;
 import com.tanle.tland.payment_service.entity.PaymentStatus;
+import com.tanle.tland.payment_service.grpc.PaymentServiceGrpc;
+import com.tanle.tland.payment_service.grpc.PaymentUrlRequest;
+import com.tanle.tland.payment_service.grpc.PaymentUrlResponse;
 import com.tanle.tland.payment_service.request.InitPaymentRequest;
 import com.tanle.tland.payment_service.response.InitPaymentResponse;
 import com.tanle.tland.payment_service.response.IpnResponse;
 import com.tanle.tland.payment_service.utils.*;
+import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
+import net.devh.boot.grpc.server.service.GrpcService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,7 +21,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @RequiredArgsConstructor
-public class PaymentService {
+@GrpcService
+public class PaymentService extends PaymentServiceGrpc.PaymentServiceImplBase {
 
 
     private final PaymentRepo paymentRepository;
@@ -32,7 +38,8 @@ public class PaymentService {
     @Value("${payment.vnpay.timeout}")
     private Integer paymentTimeout; //minutes
 
-    public InitPaymentResponse init(InitPaymentRequest request) {
+    @Override
+    public void getPaymentUrl(PaymentUrlRequest request, StreamObserver<PaymentUrlResponse> responseObserver) {
         var amount = request.getAmount() * DEFAULT_MULTIPLIER;  // 1. amount * 100
         var txnRef = request.getTxnRef();                       // 2. registerId
         var returnUrl = VNPayUtils.buildReturnUrl(txnRef);                 // 3. FE redirect by returnUrl
@@ -68,8 +75,13 @@ public class PaymentService {
         params.put(VNPayParams.ORDER_TYPE, ORDER_TYPE);
 
         var initPaymentUrl = VNPayUtils.buildInitPaymentUrl(params);
-        return InitPaymentResponse.builder()
-                .vnpUrl(initPaymentUrl).build();
+
+        PaymentUrlResponse response = PaymentUrlResponse.newBuilder()
+                .setVnpUrl(initPaymentUrl)
+                .build();
+
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
     }
 
     @Transactional

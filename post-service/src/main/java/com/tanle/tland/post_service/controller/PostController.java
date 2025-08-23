@@ -4,6 +4,7 @@ import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.*;
 import com.tanle.tland.post_service.service.PostService;
 import com.tanle.tland.post_service.response.PostDetailResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.Path;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -101,8 +102,9 @@ public class PostController {
     @PostMapping("/post")
     public ResponseEntity<MessageResponse> createPost(
             @RequestHeader("X-UserId") String userId,
-            @RequestBody PostCreateRequest request) {
-        MessageResponse response = postService.createPost(request, userId);
+            @RequestBody PostCreateRequest request,
+            HttpServletRequest httpServletReques) {
+        MessageResponse response = postService.createPost(request, userId, httpServletReques);
 
         return ResponseEntity.ok(response);
     }

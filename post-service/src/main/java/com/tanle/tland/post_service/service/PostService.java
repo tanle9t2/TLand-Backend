@@ -2,13 +2,14 @@ package com.tanle.tland.post_service.service;
 
 import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.nio.file.AccessDeniedException;
 import java.util.List;
 import java.util.Map;
 
 public interface PostService {
-    MessageResponse createPost(PostCreateRequest request, String userId);
+    MessageResponse createPost(PostCreateRequest request, String userId, HttpServletRequest httpServletRequest);
 
     MessageResponse updatePost(String postId, String userId, PostCreateRequest request) throws AccessDeniedException;
 

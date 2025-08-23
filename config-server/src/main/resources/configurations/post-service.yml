@@ -28,6 +28,10 @@ grpc:
     userServiceGrpc:
       address: "discovery:///user-service"
       negotiationType: PLAINTEXT
+    paymentServiceGrpc:
+      address: "discovery:///payment-service"
+      negotiationType: PLAINTEXT
+
   server:
     port: 9094
     enable-reflection: true

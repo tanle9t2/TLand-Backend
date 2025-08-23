@@ -48,7 +48,7 @@ public class VNPayUtils {
             }
         }
 
-        var secureHash = hmacSHA512(secretKey ,hashPayload.toString());
+        var secureHash = hmacSHA512(secretKey, hashPayload.toString());
         return secureHash.equals(reqSecureHash);
     }
 
@@ -81,7 +81,7 @@ public class VNPayUtils {
         }
 
         // 3. Build secureHash
-        var secureHash = hmacSHA512(secretKey , String.valueOf(hashPayload));
+        var secureHash = hmacSHA512(secretKey, String.valueOf(hashPayload));
 
         // 4. Finalize query
         query.append("&vnp_SecureHash=");
@@ -120,6 +120,7 @@ public class VNPayUtils {
             return "";
         }
     }
+
     @Value("${payment.vnpay.secret-key}")
     public void setSecretKey(String secretKey) {
         VNPayUtils.secretKey = secretKey;

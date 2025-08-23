@@ -18,13 +18,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PaymentConsumer {
 
-    @KafkaListener(topics = "order-topic", groupId = "saga-service")
-    public void consumeEventAndPublisheTopic(List<OrderEvent> orderEvents) {
-        System.out.println("consume");
+//    @KafkaListener(topics = "order-topic", groupId = "saga-service")
+//    public void consumeEventAndPublisheTopic(List<OrderEvent> orderEvents) {
+//        System.out.println("consume");
 //        Flux.fromIterable(orderEvents)
 //                .flatMap(this::processPayment)
 //                .subscribe();
-    }
+//    }
 //    private Mono<PaymentEvent> processPayment(OrderEvent orderEvent) {
 //        if (OrderStatus.ORDER_CREATED.equals(orderEvent.getOrderStatus())) {
 //            return Mono.fromSupplier(() -> paymentService.newOrderEvent(orderEvent));
