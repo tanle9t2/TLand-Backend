@@ -1,5 +1,6 @@
 package com.tanle.tland.post_service.service;
 
+import com.tanle.tland.post_service.entity.PostStatus;
 import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +17,9 @@ public interface PostService {
     MessageResponse inActivePost(String userId, String postId);
 
     MessageResponse acceptPost(List<String> role, String postId);
+
+    void updateStatusPost(String postId, PostStatus status);
+    void deletePost(String postId);
 
     MessageResponse rejectPost(List<String> role, String postId);
 

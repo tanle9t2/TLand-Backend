@@ -9,6 +9,8 @@ import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;
 
+import java.util.List;
+
 @GrpcService
 @RequiredArgsConstructor
 public class PostServiceGrpcImpl extends PostToAssetServiceGrpc.PostToAssetServiceImplBase {
@@ -16,7 +18,8 @@ public class PostServiceGrpcImpl extends PostToAssetServiceGrpc.PostToAssetServi
 
     @Override
     public void checkAttachedPost(PostCheckAttachRequest request, StreamObserver<PostCheckAttachResponse> responseObserver) {
-        boolean isAttached = postRepo.existsByAssetIdAndStatus(request.getId(), PostStatus.SHOW);
+        boolean isAttached = postRepo.existsByAssetIdAndStatusIn(request.getId(),
+                List.of(PostStatus.SHOW, PostStatus.HIDE, PostStatus.WAITING_PAYMENT, PostStatus.WAITING_ACCEPT));
         PostCheckAttachResponse response = PostCheckAttachResponse.newBuilder()
                 .setIsAttached(isAttached)
                 .build();

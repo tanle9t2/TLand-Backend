@@ -22,6 +22,7 @@ import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.*;
 import com.tanle.tland.post_service.response.PostDetailResponse;
 import com.tanle.tland.post_service.service.PostService;
+import com.tanle.tland.post_service.utils.AppConstant;
 import com.tanle.tland.post_service.utils.Helper;
 import com.tanle.tland.user_serivce.grpc.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -76,7 +77,9 @@ public class PostServiceImpl implements PostService {
 
         PaymentUrlResponse paymentUrlResponse = paymentServiceBlockingStub.getPaymentUrl(
                 PaymentUrlRequest.newBuilder()
-                        .setAmount(200000)
+                        .setAmount(AppConstant.PRICE_CREATED)
+                        .setPurposeType(PurposeType.POST.name())
+                        .setTransactionType(TransactionType.CREATED.name())
                         .setIpAddress(Helper.getIpAddress(httpServletRequest))
                         .setTxnRef(post.getId())
                         .build()
@@ -137,6 +140,25 @@ public class PostServiceImpl implements PostService {
                 .message("Successfully accept post")
                 .status(HttpStatus.OK)
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void updateStatusPost(String postId, PostStatus status) {
+        Post post = postRepo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
+
+        post.setStatus(status);
+        postRepo.save(post);
+    }
+
+    @Override
+    @Transactional
+    public void deletePost(String postId) {
+        Post post = postRepo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
+
+        postRepo.delete(post);
     }
 
     @Override

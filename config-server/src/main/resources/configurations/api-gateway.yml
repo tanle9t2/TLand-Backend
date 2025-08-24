@@ -16,7 +16,7 @@ spring:
               lower-case-service-id: true
           routes:
             - id: user-service
-              uri: http://localhost:8081
+              uri: lb:http://USER-SERVICE
               predicates:
                 - Path=/user-service/api/v1/**
             - id: asset-service
@@ -31,6 +31,10 @@ spring:
               uri: lb:http://SEARCH-SERVICE
               predicates:
                 - Path=/search-service/api/v1/**
+            - id: payment-service
+              uri: lb:http://PAYMENT-SERVICE
+              predicates:
+                - Path=/payment-service/api/v1/**
 
   main:
     web-application-type: reactive

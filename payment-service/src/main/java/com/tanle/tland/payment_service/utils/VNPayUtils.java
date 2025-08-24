@@ -1,5 +1,7 @@
 package com.tanle.tland.payment_service.utils;
 
+import com.tanle.tland.payment_service.entity.PurposeType;
+import com.tanle.tland.payment_service.entity.TransactionType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
@@ -94,8 +96,8 @@ public class VNPayUtils {
         return String.format(returnUrlFormat);
     }
 
-    public static String buildPaymentDetail(String orderId) {
-        return String.format("Payment for order(s): %s", "x");
+    public static String buildPaymentDetail(String orderId, PurposeType purposeType, TransactionType transactionType) {
+        return String.format("%s|%s|%s", orderId, purposeType.name(), transactionType.name());
     }
 
     public static String hmacSHA512(final String key, final String data) {

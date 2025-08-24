@@ -8,5 +8,5 @@ public class AppConstant {
     public static final String ORDER_DIRECTION_DEFAULT = "ASC";
     public static final String PAGE_DEFAULT = "0";
     public static final String POST_STATUS_DEFAULT = "SHOW";
-
+    public static final Integer PRICE_CREATED = 50000;
 }

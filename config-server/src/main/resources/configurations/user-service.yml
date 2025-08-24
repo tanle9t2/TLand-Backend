@@ -22,10 +22,10 @@ spring:
 grpc:
   client:
     uploadServiceGrpc:
-      address: "static://localhost:9092"
+      address: "discovery:///upload-service"
       negotiationType: PLAINTEXT
   server:
-    port: 9091
+    port: 9191
     enable-reflection: true
 
 keycloak:

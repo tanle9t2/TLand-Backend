@@ -1,10 +1,7 @@
-package com.tanle.tland.payment_service.event;
-
+package com.tanle.tland.post_service.event;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import com.tanle.tland.payment_service.entity.PaymentStatus;
-import com.tanle.tland.payment_service.request.PaymentRequest;
+import com.tanle.tland.post_service.request.PaymentRequest;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

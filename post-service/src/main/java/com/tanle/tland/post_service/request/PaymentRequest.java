@@ -1,4 +1,4 @@
-package com.tanle.tland.payment_service.request;
+package com.tanle.tland.post_service.request;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

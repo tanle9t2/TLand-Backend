@@ -9,9 +9,11 @@ service PaymentService {
 }
 
 message PaymentUrlRequest {
-  string txnRef = 1; //orderId
-  int64  amount = 2; //totalOrderIdAmount
-  string ipAddress = 3; //ipaddress
+  string txnRef = 1;
+  int64  amount = 2;
+  string ipAddress = 3;
+  string purposeType = 4;
+  string  transactionType = 5;
 }
 
 message PaymentUrlResponse {
