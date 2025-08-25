@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+service PostToSearchService {
+  rpc getAllPost(Empty) returns(PostDetailResponseList);
+  rpc getPostById(PostDetailRequest) returns(PostDetailResponse);
+}
+
+message Empty {
+
+}
+message PostDetailResponseList {
+  repeated PostDetailResponse response = 1;
+}
+message PostDetailRequest {
+  string id = 1;
+}
+message PostDetailResponse {
+  string id = 1;
+  string title = 2;
+  string description = 3;;
+  double price = 4;
+  string type = 5;
+  string lastUpdated = 6;
+  string createdAt = 7;
+  string status = 8;
+  AssetResponse assetDetail = 9;
+  UserInfoResponse userInfo = 10;
+}
+
+message UserInfoResponse {
+  string id = 1;
+  string firstName = 2;
+  string lastName = 3;
+  string avt = 4;
+}
+
+message AssetResponse {
+  string id = 1;
+  string province = 4;
+  string ward = 5;
+  string address = 6;
+  repeated int32 dimension = 7 ;
+  map<string, string> properties = 8;
+  repeated Content contentList = 9;
+  double landArea = 10;
+  double usableArea = 11;
+  repeated string otherInfo = 12;
+  map<string, string> locationAsset = 13;
+  CategoryResponse category = 14;
+
+}
+message CategoryResponse {
+  string id = 1;
+  string name = 2;
+}
+message Content {
+  string id = 1;
+  string url = 2;
+  string name = 3;
+  double duration = 4;
+  string type = 5;
+}
