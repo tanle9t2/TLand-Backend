@@ -35,6 +35,10 @@ spring:
               uri: lb:http://PAYMENT-SERVICE
               predicates:
                 - Path=/payment-service/api/v1/**
+            - id: rag-chatbot-service
+              uri: lb:http://RAG-CHATBOT-SERVICE
+              predicates:
+                - Path=/payment-service/api/v1/**
 
   main:
     web-application-type: reactive

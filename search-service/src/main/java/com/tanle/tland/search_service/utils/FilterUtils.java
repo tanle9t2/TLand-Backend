@@ -7,8 +7,8 @@ import java.util.Set;
 
 public class FilterUtils {
     public static final String DEFAULT_BANNER = "https://res.cloudinary.com/dlwjpzshh/image/upload/v1746793532/jjvsildtdhpto8nr13pm.png";
-    public static final String PAGE = "1";
-    public static final String PAGE_SIZE = "5";
+    public static final String PAGE = "0";
+    public static final String PAGE_SIZE = "10";
     public static final String PADDING_OFFSET = "0";
     public static final String CATEGORY = "category";
     public static final String PROPERTIES = "properties";

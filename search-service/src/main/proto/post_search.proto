@@ -6,6 +6,7 @@ option java_outer_classname = "PostToSearchProto";
 
 service PostToSearchService {
   rpc getAllPost(Empty) returns(PostDetailResponseList);
+  rpc getPostById(PostDetailRequest) returns(PostDetailResponse);
 }
 
 message Empty {
@@ -13,6 +14,9 @@ message Empty {
 }
 message PostDetailResponseList {
   repeated PostDetailResponse response = 1;
+}
+message PostDetailRequest {
+  string id = 1;
 }
 message PostDetailResponse {
   string id = 1;

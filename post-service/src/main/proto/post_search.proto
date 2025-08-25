@@ -7,10 +7,14 @@ import "asset_post.proto";
 
 service PostToSearchService {
   rpc getAllPost(Empty) returns(PostDetailResponseList);
+  rpc getPostById(PostDetailRequest) returns(PostDetailResponse);
 }
 
 message Empty {
 
+}
+message PostDetailRequest {
+  string id = 1;
 }
 message PostDetailResponseList {
   repeated PostDetailResponse response = 1;

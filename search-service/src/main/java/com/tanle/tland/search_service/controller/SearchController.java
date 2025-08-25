@@ -3,6 +3,7 @@ package com.tanle.tland.search_service.controller;
 import com.tanle.tland.search_service.entity.PostDocument;
 import com.tanle.tland.search_service.response.FilterSearchResponse;
 import com.tanle.tland.search_service.response.PageResponse;
+import com.tanle.tland.search_service.service.AsyncService;
 import com.tanle.tland.search_service.service.SearchService;
 import com.tanle.tland.search_service.utils.FilterUtils;
 import com.tanle.tland.user_serivce.grpc.PostDetailResponse;
@@ -23,6 +24,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class SearchController {
     private final SearchService searchService;
+    private final AsyncService asyncService;
 
     @GetMapping("/search")
     public ResponseEntity<?> search(
@@ -44,7 +46,7 @@ public class SearchController {
             @RequestParam(value = "size", required = false, defaultValue = FilterUtils.PAGE_SIZE) String size,
             @RequestParam Map<String, String> params
     ) {
-        List<FilterSearchResponse> filterSearchResponses = searchService.getAggregation(keyword,params);
+        List<FilterSearchResponse> filterSearchResponses = searchService.getAggregation(keyword, params);
 
 
         return ResponseEntity.ok(filterSearchResponses);
@@ -52,7 +54,7 @@ public class SearchController {
 
     @GetMapping("/search/async")
     public ResponseEntity<String> asyncData() {
-        searchService.migrateData();
+        asyncService.migrateData();
         return ResponseEntity.ok("OK");
     }
 }

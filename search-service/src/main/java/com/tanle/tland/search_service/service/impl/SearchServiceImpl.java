@@ -49,10 +49,7 @@ import java.util.stream.Collectors;
 public class SearchServiceImpl implements SearchService {
     private final ElasticsearchOperations elasticsearchOperations;
     private final ElasticsearchOperations elasticsearchRestTemplate;
-    private final PostMapper postMapper;
 
-    @GrpcClient("postServiceGrpc")
-    private PostToSearchServiceGrpc.PostToSearchServiceBlockingStub postToSearchServiceBlockingStub;
 
     @Override
     public PageResponse<PostDocument> searchPost(String keyword, String page, String size, Map<String, String> params) {
@@ -257,23 +254,6 @@ public class SearchServiceImpl implements SearchService {
         }
     }
 
-    @Override
-    public void migrateData() {
-        // Check if the index exists
-        IndexOperations indexOps = elasticsearchOperations.indexOps(PostDocument.class);
-        if (!indexOps.exists()) {
-            indexOps.create();
-            indexOps.putMapping(indexOps.createMapping(PostDocument.class));
-        }
-        PostDetailResponseList responses = postToSearchServiceBlockingStub.getAllPost(Empty.newBuilder().build());
-
-        for (var post : responses.getResponseList()) {
-            PostDocument postDocument = postMapper.convertToDocument(post);
-            elasticsearchRestTemplate.save(postDocument);
-            log.info("Create post - {}", post.getId());
-        }
-
-    }
 
     private boolean isValidSearchField(Map<String, String> params, String keyword) {
         return params != null && !isNullOrEmpty(params.get(keyword));
@@ -333,7 +313,7 @@ public class SearchServiceImpl implements SearchService {
                 .withQuery(boolQueryBuilder.build()._toQuery());
 
         queryBuilder.withPageable(PageRequest.of(
-                Integer.parseInt(page) - 1,
+                Integer.parseInt(page),
                 Integer.parseInt(size)));
 
         queryBuilder.withFilter(f -> f.bool(b -> {

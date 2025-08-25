@@ -12,5 +12,5 @@ public interface SearchService {
 
     List<FilterSearchResponse> getAggregation(String keyword, Map<String, String> params);
 
-    void migrateData();
+
 }
