@@ -1,18 +1,19 @@
-from typing import List, Optional
-from fastapi import FastAPI, HTTPException, APIRouter
+from http import HTTPStatus
+
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import py_eureka_client.eureka_client as eureka_client
+from llama_cloud_services import LlamaParse
 from pydantic import BaseModel
 import uvicorn
 
 from request.QueryRequest import QueryRequest
 from response.QueryResponse import QueryResponse
+from service.embeeding_service import markdown_chunking
+from service.llama_parse_service import parse_markdown
 from service.rag_qa import ask_question
-from langchain_openai import OpenAIEmbeddings
 
-embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
 app = FastAPI(root_path="/rag-service")
-
 
 
 @app.on_event("startup")
@@ -34,6 +35,7 @@ async def chat_endpoint(request: QueryRequest):
 
         return QueryResponse(
             answer=result["answer"],
+            context=result["context"],
         )
 
     except Exception as e:
@@ -45,6 +47,23 @@ async def root():
     print("ok")
     return {"message": "Hello World"}
 
+
+@app.post("/api/v1/feed")
+async def feed(file: UploadFile = File(...)):
+    await markdown_chunking(file)
+    return {
+        "message": "Success",
+        "code": HTTPStatus.OK
+    }
+
+
+# @app.post("/api/v1/chunking")
+# async def ok(file: UploadFile = File(...)):
+#
+#     # Chunk Markdown
+#     chunks = await markdown_chunking(file, max_chunk_size=500)
+#     return {"message": chunks}
+#
 
 #
 # @app.get("/hello/{name}")

@@ -17,7 +17,6 @@ def load_vectorstore():
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
     index_name = os.getenv("PINECONE_INDEX_NAME")
     index = pc.Index(index_name)
-    print(index_name)
     embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
     vectorstore = PineconeVectorStore(
         index=index,
@@ -27,19 +26,25 @@ def load_vectorstore():
     return vectorstore
 
 
-def ask_question(query: str, chat_history=None, k: int = 5):
+def ask_question(query: str, chat_history=None, k: int = 10):
     vectorstore = load_vectorstore()
     retriever = vectorstore.as_retriever(search_kwargs={"k": k})
     llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0)
 
-    # Define prompt template
     prompt = ChatPromptTemplate.from_messages([
         ("system",
-         "Bạn là một chuyên gia tư vấn bất động sản. "
-         "Nhiệm vụ của bạn là hỗ trợ khách hàng tìm kiếm và lựa chọn bất động sản phù hợp. "
-         "Bạn phải dựa trên dữ liệu đã cung cấp. "
-         "Nếu dữ liệu không đủ để trả lời, hãy hỏi thêm thông tin cụ thể từ khách hàng. "
-         "Nếu sau khi hỏi thêm mà vẫn không có dữ liệu phù hợp, hãy lịch sự nói rằng bạn không thể trả lời."),
+         "Bạn là một chuyên gia tư vấn bất động sản giàu kinh nghiệm tại Việt Nam. "
+         "Nhiệm vụ của bạn là: "
+         "- Hỗ trợ khách hàng tìm kiếm, lựa chọn bất động sản phù hợp (dựa trên dữ liệu đã cung cấp). "
+         "- Tư vấn các khoản vay và giải pháp tài chính khi khách hàng có nhu cầu. "
+         "Nguyên tắc: "
+        "1. Chỉ sử dụng dữ liệu được cung cấp từ ngữ cảnh để trả lời. Không cần nói rõ nguồn dữ liệu hay nhắc 'dựa vào dữ liệu đã cung cấp'. Hãy trả lời trực tiếp, tự nhiên, như đang nói chuyện với khách hàng."
+         "2. Nếu dữ liệu không đủ, hãy lịch sự hỏi thêm thông tin cụ thể (ví dụ: khu vực, ngân sách, loại bất động sản). "
+         "3. Nếu sau khi hỏi thêm vẫn không có dữ liệu phù hợp, hãy nói rõ ràng và lịch sự rằng bạn không thể trả lời. "
+         "4. Trả lời tự nhiên, như một chuyên gia đang tư vấn trực tiếp cho khách hàng. "
+         "5. Chỉ tập trung vào lĩnh vực bất động sản và tư vấn tài chính liên quan, không trả lời ngoài phạm vi."
+         "6. Nếu người dùng hỏi ngoài phạm vi (ví dụ: lập trình, toán học, nấu ăn...), hãy lịch sự từ chối và nói:  Xin lỗi, tôi chỉ có thể tư vấn về bất động sản và tài chính liên quan."),
+
 
         MessagesPlaceholder(variable_name="history"),
 
