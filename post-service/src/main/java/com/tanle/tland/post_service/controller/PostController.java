@@ -73,18 +73,28 @@ public class PostController {
 
     @DeleteMapping("/post/{postId}")
     public ResponseEntity<MessageResponse> deletePost(
+            @RequestHeader("X-Roles") List<String> roles,
             @RequestHeader("X-UserId") String userId,
             @PathVariable("postId") String postId) {
-        MessageResponse response = postService.inActivePost(userId, postId);
+        MessageResponse response = postService.inActivePost(userId, roles, postId);
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/post/{postId}/hide")
+    public ResponseEntity<MessageResponse> hide(
+            @RequestHeader("X-Roles") List<String> roles,
+            @RequestHeader("X-UserId") String userId,
+            @PathVariable("postId") String postId) {
+        MessageResponse response = postService.hidePost(userId, roles, postId);
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/posts/history/{assetId}")
     public ResponseEntity<PageResponse<PostHistoryResponse>> getHistoryPost(
+            @RequestHeader("X-UserId") String userId,
             @PathVariable("assetId") String assetId,
             @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
             @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size) {
-        String userId = "eadd6456-a5ea-4d41-b71a-061541227b8d";
         PageResponse<PostHistoryResponse> response = postService.findHistoryPost(assetId, userId,
                 Integer.parseInt(page), Integer.parseInt(size));
         return ResponseEntity.ok(response);

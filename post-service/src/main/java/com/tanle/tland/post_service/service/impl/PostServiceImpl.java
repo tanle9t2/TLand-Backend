@@ -112,11 +112,11 @@ public class PostServiceImpl implements PostService {
 
     @Override
     @Transactional
-    public MessageResponse inActivePost(String userId, String postId) {
+    public MessageResponse inActivePost(String userId, List<String> roles, String postId) {
         Post post = postRepo.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
 
-        if (!post.getUserId().equals(userId))
+        if (!post.getUserId().equals(userId) && !roles.contains(UserRole.ROLE_ADMIN.name()))
             throw new UnauthorizedException("Don't have permission for this resource");
 
         post.setStatus(PostStatus.DELETE);
@@ -124,6 +124,27 @@ public class PostServiceImpl implements PostService {
                 .message("Successfully inactive post")
                 .status(HttpStatus.OK)
                 .build();
+    }
+
+    @Override
+    public MessageResponse hidePost(String userId, List<String> roles, String postId) {
+        Post post = postRepo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
+        if (post.getStatus() != PostStatus.SHOW)
+            throw new RuntimeException("Invalid status");
+
+        if (!post.getUserId().equals(userId) && !roles.contains(UserRole.ROLE_ADMIN.name()))
+            throw new UnauthorizedException("Don't have permission for this resource");
+
+        post.setStatus(PostStatus.HIDE);
+        postRepo.save(post);
+
+        return MessageResponse.builder()
+                .status(HttpStatus.OK)
+                .message("Successfully hide post")
+                .data(Map.of("id", postId))
+                .build();
+
     }
 
     @Override

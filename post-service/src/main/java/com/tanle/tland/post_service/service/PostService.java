@@ -14,11 +14,14 @@ public interface PostService {
 
     MessageResponse updatePost(String postId, String userId, PostCreateRequest request) throws AccessDeniedException;
 
-    MessageResponse inActivePost(String userId, String postId);
+    MessageResponse inActivePost(String userId, List<String> roles, String postId);
+
+    MessageResponse hidePost(String userId, List<String> roles, String postId);
 
     MessageResponse acceptPost(List<String> role, String postId);
 
     void updateStatusPost(String postId, PostStatus status);
+
     void deletePost(String postId);
 
     MessageResponse rejectPost(List<String> role, String postId);
