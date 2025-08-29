@@ -18,7 +18,7 @@ public interface PostService {
 
     MessageResponse hidePost(String userId, List<String> roles, String postId);
 
-    MessageResponse acceptPost(List<String> role, String postId);
+    MessageResponse acceptPost(String userId,List<String> role, String postId);
 
     void updateStatusPost(String postId, PostStatus status);
 

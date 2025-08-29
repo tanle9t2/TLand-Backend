@@ -122,8 +122,9 @@ public class PostController {
     @PostMapping("/post/{postId}/accept")
     public ResponseEntity<MessageResponse> acceptPost(
             @RequestHeader("X-Roles") List<String> roles,
+            @RequestHeader("X-UserId") String userId,
             @PathVariable("postId") String postId) {
-        MessageResponse response = postService.acceptPost(roles, postId);
+        MessageResponse response = postService.acceptPost(userId, roles, postId);
 
         return ResponseEntity.ok(response);
     }

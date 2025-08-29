@@ -5,6 +5,7 @@ import com.tanle.tland.asset_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.asset_service.mapper.AssetMapper;
 import com.tanle.tland.asset_service.projection.AssetSummary;
 import com.tanle.tland.asset_service.repo.CategoryRepo;
+import com.tanle.tland.asset_service.request.AssetCreateRequest;
 import com.tanle.tland.asset_service.response.AssetDetailResponse;
 import com.tanle.tland.asset_service.response.AssetSummaryResponse;
 import com.tanle.tland.asset_service.response.CategoryResponse;
@@ -21,6 +22,7 @@ public abstract class AssetMapperDecorator implements AssetMapper {
     private AssetMapper assetMapper;
     @Autowired
     private CategoryRepo categoryRepo;
+
 
     @Override
     public AssetSummaryResponse convertToAssetSummaryResponse(AssetSummary assetSummary) {

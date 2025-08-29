@@ -155,6 +155,7 @@ public class AssetServiceImpl implements AssetService {
                 .setId(userId)
                 .build());
 
+
         Asset asset = assetMapper.convertToAsset(createRequest);
         asset.getContents().forEach(c -> c.generateId());
         asset.setId(UUID.randomUUID().toString());
@@ -257,6 +258,14 @@ public class AssetServiceImpl implements AssetService {
     public MessageResponse updateAsset(AssetCreateRequest request, String userId) throws AccessDeniedException {
         Asset asset = assetRepo.findById(request.getId())
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found asset"));
+        PostCheckAttachResponse response = postToAssetServiceBlockingStub.checkAttachedPost(
+                PostCheckAttachRequest.newBuilder()
+                        .setId(asset.getId())
+                        .build()
+        );
+        if (response.getIsAttached())
+            throw new RuntimeException("Asset is attaching post");
+
 
         if (!asset.getUserId().equals(userId))
             throw new AccessDeniedException("Don't have permission for this resource");

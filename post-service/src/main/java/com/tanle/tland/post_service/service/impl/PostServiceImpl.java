@@ -148,11 +148,11 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public MessageResponse acceptPost(List<String> roles, String postId) {
+    public MessageResponse acceptPost(String userId, List<String> roles, String postId) {
         Post post = postRepo.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
 
-        if (roles == null || !roles.contains(UserRole.ROLE_ADMIN.name()))
+        if (!post.getUserId().equals(userId) && !roles.contains(UserRole.ROLE_ADMIN.name()))
             throw new UnauthorizedException("Don't have permission for this resource");
 
         post.setStatus(PostStatus.SHOW);
