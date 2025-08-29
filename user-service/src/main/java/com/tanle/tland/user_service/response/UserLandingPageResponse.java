@@ -1,33 +1,24 @@
 package com.tanle.tland.user_service.response;
 
-import jakarta.persistence.Column;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class UserInfo {
+public class UserLandingPageResponse {
     private String id;
-    private String username;
+    private String avtUrl;
     private String bannerUrl;
     private String description;
-    private String email;
     private String firstName;
     private String lastName;
-    private LocalDate dob;
     private LocalDateTime createdAt;
-    private LocalDateTime lastAccess;
-    private boolean isActive;
-    private String phoneNumber;
-    private boolean sex;
-    private String taxCode;
-    private String cid;
-    private String avtUrl;
+    private Long totalFollower;
+    private Long totalFollowing;
 }

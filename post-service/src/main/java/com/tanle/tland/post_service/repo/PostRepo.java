@@ -32,7 +32,7 @@ public interface PostRepo extends JpaRepository<Post, String> {
 
     @Query("""
                 FROM Post p
-                WHERE p.title LIKE CONCAT('%', :kw, '%')
+                WHERE (:kw IS NULL OR p.title LIKE CONCAT('%', :kw, '%'))
                   AND (:status IS NULL OR p.status = :status)
                   AND (:userId IS NULL OR p.userId = :userId)
             """)

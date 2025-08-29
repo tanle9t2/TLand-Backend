@@ -37,6 +37,16 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/public/posts/landing")
+    public ResponseEntity<PageResponse> getPostsLanding(
+            @RequestParam(value = "userId", defaultValue = PAGE_DEFAULT) String userId,
+            @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
+            @RequestParam(value = "size", defaultValue = PAGE_SIZE) String size) {
+        PageResponse response = postService.findAllByStatus(POST_STATUS_DEFAULT, null, userId,
+                Integer.parseInt(page), Integer.parseInt(size));
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/post/admin")
     public ResponseEntity<PageResponse<PostAdminOverviewResponse>> getPostsByStatus(
             @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,

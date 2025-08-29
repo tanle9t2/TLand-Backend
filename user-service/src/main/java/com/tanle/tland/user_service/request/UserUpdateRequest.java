@@ -14,6 +14,7 @@ import java.time.LocalDate;
 public class UserUpdateRequest {
     private String username;
     private String email;
+    private String description;
     private String firstName;
     private String lastName;
     private LocalDate dob;

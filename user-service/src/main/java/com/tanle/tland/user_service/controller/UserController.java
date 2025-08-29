@@ -47,6 +47,12 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/public/user/page/{userId}")
+    public ResponseEntity<UserLandingPageResponse> getUserLandingPage(@PathVariable("userId") String userId) {
+        UserLandingPageResponse response = userService.findUserLandingPage(userId);
+        return ResponseEntity.ok(response);
+    }
+
 
     @GetMapping("/users")
     public ResponseEntity<PageResponse<UserInfo>> getAll(
@@ -72,11 +78,12 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping(value = "/user/update-avt", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<MessageResponse> updateAvt(
+    @PostMapping(value = "/user/upload-media", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<MessageResponse> updateMedia(
             @RequestHeader("X-UserId") String id,
+            @RequestParam(name = "type") String type,
             @RequestParam MultipartFile file) {
-        MessageResponse response = userService.updateAvt(id, file);
+        MessageResponse response = userService.updateMedia(id, type, file);
         return ResponseEntity.ok(response);
     }
 
@@ -87,34 +94,42 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping(value = "/user/{userId}/unfollow/{followerId}")
+    @GetMapping("/user/follow/{followerId}")
+    public ResponseEntity<MessageResponse> checkUserFollow(
+            @RequestHeader("X-UserId") String id,
+            @PathVariable("followerId") String followerId) {
+        MessageResponse response = userService.checkUserFollow(id, followerId);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping(value = "/user/unfollow/{followerId}")
     public ResponseEntity<MessageResponse> unfollowUser(
-            @PathVariable("userId") String id,
+            @RequestHeader("X-UserId") String id,
             @PathVariable("followerId") String followerId) {
         MessageResponse response = userService.unfollowUser(id, followerId);
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping(value = "/user/{userId}/follow/{followerId}")
-    public ResponseEntity<FollowResponse> followUser(
-            @PathVariable("userId") String id,
+    @PostMapping(value = "/user/follow/{followerId}")
+    public ResponseEntity<MessageResponse> followUser(
+            @RequestHeader("X-UserId") String id,
             @PathVariable("followerId") String followerId) {
-        FollowResponse response = userService.followerUser(id, followerId);
+        MessageResponse response = userService.followerUser(id, followerId);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/user/{userId}/follower")
+    @GetMapping("/user/follower")
     public ResponseEntity<PageResponse<FollowResponse>> getFollower(
-            @PathVariable("userId") String id,
+            @RequestHeader("X-UserId") String id,
             @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
             @RequestParam(value = "limit", defaultValue = PAGE_SIZE) String limit) {
         PageResponse<FollowResponse> response = userService.getFollower(id, Integer.parseInt(page), Integer.parseInt(limit));
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/user/{userId}/following")
+    @GetMapping("/user/following")
     public ResponseEntity<PageResponse<FollowResponse>> getFollowing(
-            @PathVariable("userId") String id,
+            @RequestHeader("X-UserId") String id,
             @RequestParam(value = "page", defaultValue = PAGE_DEFAULT) String page,
             @RequestParam(value = "limit", defaultValue = PAGE_SIZE) String limit) {
         PageResponse<FollowResponse> response = userService.getFollowing(id, Integer.parseInt(page), Integer.parseInt(limit));

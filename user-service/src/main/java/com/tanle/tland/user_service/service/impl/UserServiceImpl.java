@@ -7,12 +7,14 @@ import com.tanle.tland.upload_service.grpc.UploadServiceGrpc;
 import com.tanle.tland.user_service.entity.User;
 import com.tanle.tland.user_service.exception.ResourceNotFoundExeption;
 import com.tanle.tland.user_service.mapper.UserMapper;
+import com.tanle.tland.user_service.projection.UserLandingPage;
 import com.tanle.tland.user_service.projection.UserProfile;
 import com.tanle.tland.user_service.repo.UserRepo;
 import com.tanle.tland.user_service.request.UserSignUpRequest;
 import com.tanle.tland.user_service.request.UserUpdateRequest;
 import com.tanle.tland.user_service.response.*;
 import com.tanle.tland.user_service.service.UserService;
+import com.tanle.tland.user_service.utils.TypeMedia;
 import io.grpc.stub.StreamObserver;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -48,6 +51,31 @@ public class UserServiceImpl implements UserService {
         User user = userRepo.findById(id).orElseThrow(() -> new ResourceNotFoundExeption("Not found user: " + id));
 
         return userMapper.convertToUserInfo(user);
+    }
+
+    @Override
+    public UserLandingPageResponse findUserLandingPage(String userId) {
+        UserLandingPage userLandingPage = userRepo.findById(userId, UserLandingPage.class)
+                .orElseThrow(() -> new ResourceNotFoundExeption("Not found user"));
+        Long totalFollower = userRepo.countFollower(userId);
+        Long totalFollowing = userRepo.countFlowing(userId);
+
+        UserLandingPageResponse response = userMapper.convertToResponse(userLandingPage);
+        response.setTotalFollower(totalFollower);
+        response.setTotalFollowing(totalFollowing);
+
+        return response;
+    }
+
+    @Override
+    public MessageResponse checkUserFollow(String userId, String followerId) {
+        Long isFollow = userRepo.checkFollow(userId, followerId);
+
+        return MessageResponse.builder()
+                .data(Map.of("isFollow", isFollow))
+                .status(HttpStatus.OK)
+                .message("SUCCESS")
+                .build();
     }
 
     @Override
@@ -139,7 +167,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public MessageResponse updateAvt(String userId, MultipartFile file) {
+    public MessageResponse updateMedia(String userId, String type, MultipartFile file) {
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found user"));
         final UploadResponse[] responses = new UploadResponse[1];
@@ -182,15 +210,21 @@ public class UserServiceImpl implements UserService {
             if (responses[0] == null) {
                 throw new RuntimeException("No response received from upload service");
             }
-            user.setAvtUrl(responses[0].getUrl());
+            Map<String, String> data = new HashMap<>();
+            if (TypeMedia.AVT.name().equals(type)) {
+                user.setAvtUrl(responses[0].getUrl());
+                data.put("avtUrl", user.getAvtUrl());
+            } else {
+                user.setBannerUrl(responses[0].getUrl());
+                data.put("bannerUrl", user.getBannerUrl());
+            }
+
             userRepo.save(user);
 
             return MessageResponse.builder()
                     .status(HttpStatus.OK)
                     .message("Successfully updated avatar")
-                    .data(Map.of(
-                            "avtUrl", user.getAvtUrl()
-                    ))
+                    .data(data)
                     .build();
 
         } catch (IOException e) {
@@ -203,32 +237,35 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public FollowResponse followerUser(String userId, String followerId) {
+    public MessageResponse followerUser(String userId, String followerId) {
         //follower id is people that click follow
         //user id is followed by follower
-        User user = userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundExeption("Not found user"));
-        User follower = userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundExeption("Not found follower"));
-
+        Long checkFollow = userRepo.checkFollow(userId, followerId);
+        if (checkFollow > 0) {
+            throw new RuntimeException("User follow is existed");
+        }
         userRepo.followUser(followerId, userId);
 
-        return userMapper.convertToFollowResponse(user);
+        return MessageResponse.builder()
+                .status(HttpStatus.OK)
+                .message("Successfully unfollow user")
+                .data(Map.of("followerId", followerId))
+                .build();
     }
 
     @Override
     @Transactional
     public MessageResponse unfollowUser(String userId, String followerId) {
-        User user = userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundExeption("Not found user"));
-        User follower = userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundExeption("Not found follower"));
-
+        Long checkFollow = userRepo.checkFollow(userId, followerId);
+        if (checkFollow < 0) {
+            throw new RuntimeException("User follow is not existed");
+        }
         userRepo.unfollowUser(followerId, userId);
 
         return MessageResponse.builder()
                 .status(HttpStatus.OK)
                 .message("Successfully unfollow user")
+                .data(Map.of("followerId", followerId))
                 .build();
     }
 

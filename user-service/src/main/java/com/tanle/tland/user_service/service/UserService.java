@@ -11,6 +11,10 @@ import java.util.List;
 public interface UserService {
     UserInfo findUserById(String id);
 
+    UserLandingPageResponse findUserLandingPage(String userId);
+
+    MessageResponse checkUserFollow(String userId, String followerId);
+
     MessageResponse createUser(UserSignUpRequest request);
 
     UserProfileResponse findProfileUser(String id);
@@ -23,9 +27,9 @@ public interface UserService {
 
     void updateLastAccess(String userId);
 
-    MessageResponse updateAvt(String userId, MultipartFile file);
+    MessageResponse updateMedia(String userId, String type, MultipartFile file);
 
-    FollowResponse followerUser(String userId, String followerId);
+    MessageResponse followerUser(String userId, String followerId);
 
     MessageResponse unfollowUser(String userId, String followerId);
 
