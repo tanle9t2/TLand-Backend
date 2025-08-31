@@ -37,3 +37,29 @@ grpc:
   server:
     port: 9193
     enable-reflection: true
+
+resilience4j:
+  retry:
+    retryAspectOrder: 1
+    instances:
+      postServiceRetry:
+        maxAttempts: 3
+        waitDuration: 500ms
+
+  circuitbreaker:
+    circuitBreakerAspectOrder: 2
+    instances:
+      postServiceCB:
+        registerHealthIndicator: true
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s
+
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers

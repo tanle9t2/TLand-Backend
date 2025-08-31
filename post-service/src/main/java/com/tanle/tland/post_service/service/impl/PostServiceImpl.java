@@ -22,6 +22,7 @@ import com.tanle.tland.post_service.request.PostCreateRequest;
 import com.tanle.tland.post_service.response.*;
 import com.tanle.tland.post_service.response.PostDetailResponse;
 import com.tanle.tland.post_service.service.PostService;
+import com.tanle.tland.post_service.service.UserServiceGrpcClient;
 import com.tanle.tland.post_service.utils.AppConstant;
 import com.tanle.tland.post_service.utils.Helper;
 import com.tanle.tland.user_serivce.grpc.*;
@@ -47,13 +48,11 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class PostServiceImpl implements PostService {
-
-    @GrpcClient("assetServiceGrpc")
-    private AssetToPostServiceGrpc.AssetToPostServiceBlockingStub assetToPostServiceBlockingStub;
-    @GrpcClient("userServiceGrpc")
-    private UserToPostServiceGrpc.UserToPostServiceBlockingStub userToPostServiceBlockingStub;
     @GrpcClient("paymentServiceGrpc")
     private PaymentServiceGrpc.PaymentServiceBlockingStub paymentServiceBlockingStub;
+
+    private final AssetServiceGrpcClient assetServiceGrpcClient;
+    private final UserServiceGrpcClient userServiceGrpcClient;
     private final PostRepo postRepo;
     private final CommentRepo commentRepo;
     private final PostMapper postMapper;
@@ -64,7 +63,7 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional
     public MessageResponse createPost(PostCreateRequest request, String userId, HttpServletRequest httpServletRequest) {
-        assetToPostServiceBlockingStub.checkExisted(AssetRequest.newBuilder()
+        assetServiceGrpcClient.checkExisted(AssetRequest.newBuilder()
                 .setId(request.getAssetId())
                 .setUserId(userId)
                 .build());
@@ -266,7 +265,7 @@ public class PostServiceImpl implements PostService {
 
         List<PostResponse> posts = postPage.stream().
                 map(p -> {
-                    AssetResponse assetResponse = assetToPostServiceBlockingStub.getAssetDetail(AssetRequest.newBuilder()
+                    AssetResponse assetResponse = assetServiceGrpcClient.getAssetDetail(AssetRequest.newBuilder()
                             .setId(p.getAssetId())
                             .build());
 
@@ -290,11 +289,11 @@ public class PostServiceImpl implements PostService {
     public List<PostResponse> findAll() {
         List<PostResponse> postResponses = postRepo.findAll().stream()
                 .map(p -> {
-                    AssetResponse assetResponse = assetToPostServiceBlockingStub.getAssetDetail(AssetRequest.newBuilder()
+                    AssetResponse assetResponse = assetServiceGrpcClient.getAssetDetail(AssetRequest.newBuilder()
                             .setId(p.getAssetId())
                             .build());
 
-                    UserPostInfoResponse userInfoResponse = userToPostServiceBlockingStub.getUserInfo(UserInfoRequest.newBuilder()
+                    UserPostInfoResponse userInfoResponse = userServiceGrpcClient.getUserInfo(UserInfoRequest.newBuilder()
                             .setId(p.getUserId())
                             .build());
 
@@ -316,7 +315,7 @@ public class PostServiceImpl implements PostService {
         List<PostOverviewResponse> data = postOverviews.get()
                 .map(p -> {
                     PostOverviewResponse overviewResponse = postMapper.convertToResponse(p);
-                    Content content = assetToPostServiceBlockingStub.getPoster(
+                    Content content = assetServiceGrpcClient.getPoster(
                             AssetRequest.newBuilder()
                                     .setUserId(p.getUserId())
                                     .setId(p.getAssetId())
@@ -349,7 +348,7 @@ public class PostServiceImpl implements PostService {
                 .map(p -> {
                     PostAdminOverviewResponse overviewResponse = postMapper.convertToAdminResponse(p);
 
-                    UserPostInfoResponse userInfoResponse = userToPostServiceBlockingStub.getUserInfo(
+                    UserPostInfoResponse userInfoResponse = userServiceGrpcClient.getUserInfo(
                             UserInfoRequest.newBuilder()
                                     .setId(p.getUserId())
                                     .build()
@@ -433,7 +432,7 @@ public class PostServiceImpl implements PostService {
                             .createdAt(c.getCreatedAt())
                             .build();
 
-                    UserPostInfoResponse userInfoResponse = userToPostServiceBlockingStub.
+                    UserPostInfoResponse userInfoResponse = userServiceGrpcClient.
                             getUserInfo(UserInfoRequest.newBuilder()
                                     .setId(c.getUserId())
                                     .build());

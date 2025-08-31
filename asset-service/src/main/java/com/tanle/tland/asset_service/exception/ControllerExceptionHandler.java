@@ -23,6 +23,9 @@ public class ControllerExceptionHandler {
             case NOT_FOUND:
                 httpStatus = HttpStatus.NOT_FOUND;
                 break;
+            case PERMISSION_DENIED:
+                httpStatus = HttpStatus.FORBIDDEN;
+                break;
             case UNAVAILABLE:
                 httpStatus = HttpStatus.SERVICE_UNAVAILABLE;
                 break;
@@ -37,14 +40,16 @@ public class ControllerExceptionHandler {
         }
 
         ExceptionResponse response = ExceptionResponse.builder()
-//                .type("/exception/" + exception.getClass().getSimpleName())
+                .type("/exception/" + ex.getClass().getSimpleName())
                 .title("Resource not found")
                 .detail(message)
                 .timeStamp(System.currentTimeMillis())
                 .status(httpStatus.value())
                 .build();
+
         return new ResponseEntity<>(response, httpStatus);
     }
+
 
     @ExceptionHandler
     public ResponseEntity<ExceptionResponse> handleResourceNotFound(ResourceNotFoundExeption exception) {

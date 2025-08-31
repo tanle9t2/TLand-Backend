@@ -14,7 +14,10 @@ import com.tanle.tland.asset_service.response.AssetDetailResponse;
 import com.tanle.tland.asset_service.response.AssetSummaryResponse;
 import com.tanle.tland.asset_service.response.MessageResponse;
 import com.tanle.tland.asset_service.service.AssetService;
+import com.tanle.tland.asset_service.service.PostServiceGrpcClient;
 import com.tanle.tland.asset_service.service.ProjectService;
+import com.tanle.tland.post_service.grpc.PostCheckAttachRequest;
+import com.tanle.tland.post_service.grpc.PostCheckAttachResponse;
 import com.tanle.tland.upload_service.grpc.FileChunk;
 import com.tanle.tland.upload_service.grpc.UploadResponse;
 import com.tanle.tland.upload_service.grpc.UploadServiceGrpc;
@@ -49,18 +52,16 @@ public class AssetServiceImpl implements AssetService {
     private UserToAssetServiceGrpc.UserToAssetServiceBlockingStub serviceBlockingStub;
     @GrpcClient("uploadServiceGrpc")
     private UploadServiceGrpc.UploadServiceStub uploadServiceStub;
-    @GrpcClient("postServiceGrpc")
-    private PostToAssetServiceGrpc.PostToAssetServiceBlockingStub postToAssetServiceBlockingStub;
+    private final PostServiceGrpcClient postServiceGrpcClient;
     private final AssetRepo assetRepo;
     private final AssetMapper assetMapper;
     private final ProjectRepo projectRepo;
-
 
     @Override
     public AssetDetailResponse findAssetById(String id) {
         Asset asset = assetRepo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found asset"));
-        PostCheckAttachResponse postCheckAttachResponse = postToAssetServiceBlockingStub.checkAttachedPost(
+        PostCheckAttachResponse postCheckAttachResponse = postServiceGrpcClient.checkAttachedPost(
                 PostCheckAttachRequest.newBuilder()
                         .setId(asset.getId())
                         .build()
@@ -87,7 +88,7 @@ public class AssetServiceImpl implements AssetService {
         List<AssetSummaryResponse> data = assetPage.get()
                 .map(a -> {
                     AssetSummaryResponse response = assetMapper.convertToAssetSummaryResponse(a);
-                    PostCheckAttachResponse isAttached = postToAssetServiceBlockingStub.checkAttachedPost(PostCheckAttachRequest.newBuilder()
+                    PostCheckAttachResponse isAttached = postServiceGrpcClient.checkAttachedPost(PostCheckAttachRequest.newBuilder()
                             .setId(a.getId())
                             .build());
 
@@ -114,7 +115,7 @@ public class AssetServiceImpl implements AssetService {
         if (!asset.getUserId().equals(userId))
             throw new AccessDeniedException("Don't have permission for this resource");
 
-        PostCheckAttachResponse response = postToAssetServiceBlockingStub.checkAttachedPost(
+        PostCheckAttachResponse response = postServiceGrpcClient.checkAttachedPost(
                 PostCheckAttachRequest.newBuilder()
                         .setId(asset.getId())
                         .build()
@@ -258,7 +259,7 @@ public class AssetServiceImpl implements AssetService {
     public MessageResponse updateAsset(AssetCreateRequest request, String userId) throws AccessDeniedException {
         Asset asset = assetRepo.findById(request.getId())
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found asset"));
-        PostCheckAttachResponse response = postToAssetServiceBlockingStub.checkAttachedPost(
+        PostCheckAttachResponse response = postServiceGrpcClient.checkAttachedPost(
                 PostCheckAttachRequest.newBuilder()
                         .setId(asset.getId())
                         .build()

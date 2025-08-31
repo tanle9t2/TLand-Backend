@@ -8,6 +8,8 @@ import com.tanle.tland.post_service.mapper.AssetMapper;
 import com.tanle.tland.post_service.mapper.PostMapper;
 import com.tanle.tland.post_service.mapper.UserMapper;
 import com.tanle.tland.post_service.response.PostDetailResponse;
+import com.tanle.tland.post_service.service.UserServiceGrpcClient;
+import com.tanle.tland.post_service.service.impl.AssetServiceGrpcClient;
 import com.tanle.tland.user_serivce.grpc.AssetRequest;
 import com.tanle.tland.user_serivce.grpc.AssetResponse;
 import com.tanle.tland.user_serivce.grpc.AssetToPostServiceGrpc;
@@ -20,10 +22,10 @@ public abstract class PostMapperDecorator implements PostMapper {
 
     @Autowired
     private PostMapper delegate;
-    @GrpcClient("assetServiceGrpc")
-    private AssetToPostServiceGrpc.AssetToPostServiceBlockingStub assetToPostServiceBlockingStub;
-    @GrpcClient("userServiceGrpc")
-    private UserToPostServiceGrpc.UserToPostServiceBlockingStub userToPostServiceBlockingStub;
+    @Autowired
+    private AssetServiceGrpcClient assetServiceGrpcClient;
+    @Autowired
+    private UserServiceGrpcClient userServiceGrpcClient;
     @Autowired
     private AssetMapper assetMapper;
     @Autowired
@@ -31,15 +33,15 @@ public abstract class PostMapperDecorator implements PostMapper {
 
     @Override
     public PostDetailResponse convertToResponse(Post post) {
+
         com.tanle.tland.post_service.response.PostDetailResponse postResponse = delegate.convertToResponse(post);
-        AssetResponse assetResponse = assetToPostServiceBlockingStub.getAssetDetail(AssetRequest.newBuilder()
+        AssetResponse assetResponse = assetServiceGrpcClient.getAssetDetail(AssetRequest.newBuilder()
                 .setId(post.getAssetId())
                 .build());
 
-        UserPostInfoResponse userInfoResponse = userToPostServiceBlockingStub.getUserInfo(UserInfoRequest.newBuilder()
+        UserPostInfoResponse userInfoResponse = userServiceGrpcClient.getUserInfo(UserInfoRequest.newBuilder()
                 .setId(post.getUserId())
                 .build());
-
 
         postResponse.setAssetDetail(assetMapper.convertToResponse(assetResponse));
         postResponse.setUserInfo(userMapper.convertToResponse(userInfoResponse));
