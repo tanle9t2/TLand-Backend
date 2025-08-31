@@ -1,11 +1,9 @@
 package com.tanle.tland.user_service.service.impl;
 
+import com.tanle.tland.user_service.entity.UserRole;
 import com.tanle.tland.user_service.request.UserSignUpRequest;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -79,5 +77,37 @@ public class KeycloakService {
         String userId = location != null ? location.substring(location.lastIndexOf("/") + 1) : null;
 
         signUpRequest.setUserId(userId);
+
+        if (userId != null) {
+            assignRoleToUser(userId, UserRole.ROLE_USER.name());
+        }
+    }
+
+    private void assignRoleToUser(String userId, String roleName) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(getAdminToken());
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        String roleUrl = keycloakUrl + "/admin/realms/" + realm + "/roles/" + roleName;
+        ResponseEntity<Map> roleResponse = restTemplate.exchange(
+                roleUrl,
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                Map.class
+        );
+        Map<String, Object> role = roleResponse.getBody();
+
+        if (role == null) {
+            throw new RuntimeException("Role not found: " + roleName);
+        }
+
+        // 2. Assign role to user
+        String assignUrl = keycloakUrl + "/admin/realms/" + realm + "/users/" + userId + "/role-mappings/realm";
+        restTemplate.exchange(
+                assignUrl,
+                HttpMethod.POST,
+                new HttpEntity<>(List.of(role), headers),
+                String.class
+        );
     }
 }

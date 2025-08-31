@@ -24,6 +24,8 @@ public interface UserMapper {
 
     UserProfileResponse convertToResponse(UserProfile userProfile);
 
+    UserProfileResponse convertToResponse(User user);
+
     UserLandingPageResponse convertToResponse(UserLandingPage userLandingPage);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)

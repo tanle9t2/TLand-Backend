@@ -39,11 +39,13 @@ public class User {
     @Column(name = "dob")
     private LocalDate dob;
     @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
     @Column(name = "last_access")
     private LocalDateTime lastAccess;
     @Column(name = "is_active")
-    private boolean isActive;
+    @Builder.Default
+    private boolean isActive = true;
     @Column(name = "sex")
     private boolean sex;
     @Column(name = "avt_url")
@@ -59,6 +61,7 @@ public class User {
 
     @Column(name = "cid")
     private String cid;
+
     @ManyToOne
     @JoinColumn(name = "plan_id")
     private Plan plan;

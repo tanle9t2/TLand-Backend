@@ -6,6 +6,7 @@ import com.tanle.tland.user_service.request.UserUpdateRequest;
 import com.tanle.tland.user_service.response.*;
 import com.tanle.tland.user_service.service.UserService;
 import com.tanle.tland.user_service.service.impl.KeycloakService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.ws.rs.GET;
 import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
@@ -42,8 +43,10 @@ public class UserController {
     }
 
     @GetMapping("/user/profile")
-    public ResponseEntity<UserProfileResponse> getProfileUser(@RequestHeader("X-UserId") String id) {
-        UserProfileResponse response = userService.findProfileUser(id);
+    public ResponseEntity<UserProfileResponse> getProfileUser(
+            HttpServletRequest httpServletRequest,
+            @RequestHeader("X-UserId") String id) {
+        UserProfileResponse response = userService.findProfileUser(id,httpServletRequest);
         return ResponseEntity.ok(response);
     }
 
@@ -73,7 +76,7 @@ public class UserController {
 
     @PutMapping("/user/{userId}/last-access")
     public ResponseEntity<Void> updateLastAccess(
-            @PathVariable("userId") String id) {
+            @RequestHeader("X-UserId") String id) {
         userService.updateLastAccess(id);
         return ResponseEntity.ok().build();
     }

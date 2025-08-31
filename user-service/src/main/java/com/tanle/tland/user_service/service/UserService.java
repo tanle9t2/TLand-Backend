@@ -3,6 +3,7 @@ package com.tanle.tland.user_service.service;
 import com.tanle.tland.user_service.request.UserSignUpRequest;
 import com.tanle.tland.user_service.request.UserUpdateRequest;
 import com.tanle.tland.user_service.response.*;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -17,7 +18,7 @@ public interface UserService {
 
     MessageResponse createUser(UserSignUpRequest request);
 
-    UserProfileResponse findProfileUser(String id);
+    UserProfileResponse findProfileUser(String id, HttpServletRequest httpServletRequest);
 
     PageResponse<UserInfo> findAdd(int page, int limit);
 

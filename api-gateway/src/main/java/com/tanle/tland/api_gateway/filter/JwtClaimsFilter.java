@@ -29,9 +29,16 @@ public class JwtClaimsFilter implements GlobalFilter {
                                 ? (List<String>) realmAccess.get("roles")
                                 : List.of();
                         String userId = jwt.getClaimAsString("sub");
+                        String firstName = jwt.getClaimAsString("given_name");
+                        String lastName = jwt.getClaimAsString("family_name");
+                        String email = jwt.getClaimAsString("email");
+
                         ServerHttpRequest mutatedRequest = exchange.getRequest().mutate()
                                 .header("X-Username", username)
                                 .header("X-UserId", userId)
+                                .header("X-FirstName", firstName)
+                                .header("X-LastName", lastName)
+                                .header("X-Email", email)
                                 .header("X-Roles", String.join(",", roles))
                                 .build();
 

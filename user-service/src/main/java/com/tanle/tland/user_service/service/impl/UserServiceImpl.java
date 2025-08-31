@@ -16,6 +16,7 @@ import com.tanle.tland.user_service.response.*;
 import com.tanle.tland.user_service.service.UserService;
 import com.tanle.tland.user_service.utils.TypeMedia;
 import io.grpc.stub.StreamObserver;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.client.inject.GrpcClient;
@@ -29,10 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -101,10 +99,29 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserProfileResponse findProfileUser(String id) {
-        UserProfile userProfile = userRepo.findProfileUser(id)
-                .orElseThrow(() -> new ResourceNotFoundExeption("Not found user"));
+    public UserProfileResponse findProfileUser(String id, HttpServletRequest httpServletRequest) {
+        Optional<UserProfile> optionalUserProfile = userRepo.findProfileUser(id);
 
+        if (!optionalUserProfile.isPresent()) {
+            String keycloakId = httpServletRequest.getHeader("X-UserId");
+            String username = httpServletRequest.getHeader("X-Username");
+            String email = httpServletRequest.getHeader("X-Email");
+            String firstName = httpServletRequest.getHeader("X-FirstName");
+            String lastName = httpServletRequest.getHeader("X-LastName");
+            User user = User.builder()
+                    .id(keycloakId)
+                    .username(username)
+                    .firstName(firstName)
+                    .lastName(lastName)
+                    .email(email)
+                    .build();
+
+            userRepo.save(user);
+
+            return userMapper.convertToResponse(user);
+        }
+
+        UserProfile userProfile = optionalUserProfile.get();
         return userMapper.convertToResponse(userProfile);
 
     }
