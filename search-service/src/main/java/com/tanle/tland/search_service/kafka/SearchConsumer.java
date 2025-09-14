@@ -45,16 +45,19 @@ public class SearchConsumer {
                 case "c": // CREATE
                     postId = payload.path("after").path("id").asText();
                     asyncService.createPost(postId);
+                    log.info("Create new post to ES: {}",postId);
                     break;
 
                 case "u": // UPDATE
                     postId = payload.path("after").path("id").asText();
                     asyncService.updatePost(postId);
+                    log.info("Update post to ES: {}",postId);
                     break;
 
                 case "d": // DELETE
                     postId = payload.path("before").path("id").asText();
                     asyncService.deletePost(postId);
+                    log.info("Delete post from ES: {}",postId);
                     break;
 
                 default:

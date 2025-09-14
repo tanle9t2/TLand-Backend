@@ -24,7 +24,7 @@ public class UserToPostServiceGrpcImpl extends UserToPostServiceGrpc.UserToPostS
     @Override
     public void getUserInfo(UserInfoRequest request, StreamObserver<UserPostInfoResponse> responseObserver) {
         Optional<UserPostInfo> userOptional = userRepo.findById(request.getId(), UserPostInfo.class);
-        if (userOptional.isPresent()) {
+        if (!userOptional.isPresent()) {
             responseObserver.onError(
                     Status.NOT_FOUND
                             .withDescription("User not found with ID: " + request.getId())

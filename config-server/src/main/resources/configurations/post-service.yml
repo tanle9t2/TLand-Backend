@@ -1,6 +1,6 @@
 # file: user-service.yml (trong config server)
 server:
-  port: 8083
+  port: 8099
   servlet:
     context-path: /post-service
 
@@ -20,7 +20,7 @@ spring:
         format_sql: true
   kafka:
     producer:
-      bootstrap-servers: 127.0.0.1:19091,127.0.0.1:19092,127.0.0.1:19093
+      bootstrap-servers: 127.0.0.1:29091
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     #      properties:
@@ -28,6 +28,7 @@ spring:
 
     consumer:
       group-id: tland-post
+      bootstrap-servers: 127.0.0.1:29091
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer

@@ -1,6 +1,6 @@
 package com.tanle.tland.payment_service.service;
 
-import com.tanle.tland.payment_service.PaymentRepo;
+import com.tanle.tland.payment_service.repository.PaymentRepo;
 import com.tanle.tland.payment_service.entity.Payment;
 import com.tanle.tland.payment_service.entity.PaymentStatus;
 import com.tanle.tland.payment_service.entity.PurposeType;

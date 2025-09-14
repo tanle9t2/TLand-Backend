@@ -24,7 +24,7 @@ import java.nio.file.Paths;
 @GrpcService
 @Slf4j
 @RequiredArgsConstructor
-public class UploadServiceGrpcImpl extends UploadServiceGrpc.UploadServiceImplBase {
+public class  UploadServiceGrpcImpl extends UploadServiceGrpc.UploadServiceImplBase {
     private final S3Client s3Client;
 
     @Value("${aws.s3.bucketName}")

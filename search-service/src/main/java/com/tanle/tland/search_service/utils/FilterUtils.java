@@ -29,6 +29,7 @@ public class FilterUtils {
             MAX_PRICE,
             ORDER_BY,
             ORDER,
+            "keyword",
             "page",
             "size"
 

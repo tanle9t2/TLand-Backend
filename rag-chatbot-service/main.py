@@ -9,7 +9,7 @@ import uvicorn
 
 from request.QueryRequest import QueryRequest
 from response.QueryResponse import QueryResponse
-from service.embeeding_service import markdown_chunking
+from service.embeeding_service import markdown_chunking, markdown_chunking_file
 from service.llama_parse_service import parse_markdown
 from service.rag_qa import ask_question
 
@@ -56,7 +56,13 @@ async def feed(file: UploadFile = File(...)):
         "code": HTTPStatus.OK
     }
 
-
+@app.post("/api/v1/test")
+async def feed(file: UploadFile = File(...)):
+    docs = await markdown_chunking_file(file)
+    return {
+        "doc": docs,
+        "code": HTTPStatus.OK
+    }
 # @app.post("/api/v1/chunking")
 # async def ok(file: UploadFile = File(...)):
 #

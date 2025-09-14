@@ -323,8 +323,10 @@ public class SearchServiceImpl implements SearchService {
             extractedTermsFilter(type, "type", b);
             extractedRange(minPrice, maxPrice, "price", b);
 
-            for (var x : restParams.entrySet()) {
-                extractedTermsFilter(x.getValue(), String.format("assetDetail.properties.%s", x.getKey()), b);
+            if (restParams != null) {
+                for (var x : restParams.entrySet()) {
+                    extractedTermsFilter(x.getValue(), String.format("assetDetail.properties.%s", x.getKey()), b);
+                }
             }
             return b;
         }));
