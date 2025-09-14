@@ -371,6 +371,7 @@ public class PostServiceImpl implements PostService {
     @Override
     @Transactional
     public MessageResponse createComment(String postId, String userId, Map<String, String> content) {
+    
         Post post = postRepo.findById(postId)
                 .orElseThrow(() -> new ResourceNotFoundExeption("Not found post"));
 
@@ -392,6 +393,7 @@ public class PostServiceImpl implements PostService {
                 ))
                 .status(HttpStatus.CREATED)
                 .build();
+
     }
 
     @Override

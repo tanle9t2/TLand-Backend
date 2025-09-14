@@ -16,7 +16,40 @@ from service.llama_parse_service import parse_markdown
 
 load_dotenv()
 embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
+async def markdown_chunking_file(file):
+    with open(file, "r", encoding="utf-8") as f:
+        markdown_text = f.read()
 
+    headers_to_split_on = [
+        ("#", "Header 1"),
+        ("##", "Header 2"),
+        ("###", "Header 3"),
+    ]
+    md_splitter = MarkdownHeaderTextSplitter(
+        headers_to_split_on=headers_to_split_on,
+        strip_headers=False
+    )
+    md_sections = md_splitter.split_text(markdown_text)
+    docs = []
+
+    for section in md_sections:
+        content = section.page_content.strip()
+        if not content:
+            continue
+        chunks = semantic_chunking(content)
+
+        for i, chunk in enumerate(chunks):
+            docs.append({
+                "id": f"{file.filename}_{i}_{uuid.uuid4().hex}",  # unique ID
+                "text": chunk,
+                "metadata": {
+                    "filename": file.filename,
+                    "chunk_index": i,
+                    "length": len(chunk),
+                }
+            })
+
+    return docs
 
 async def markdown_chunking(file):
     markdown_text = await parse_markdown(file)
@@ -135,3 +168,19 @@ async def index_to_pinecone(docs):
         metadatas=[doc["metadata"] for doc in docs],
         index_name=index_name,
     )
+
+
+if __name__ == "__main__":
+    pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+
+    index = pc.Index(os.getenv("PINECONE_INDEX_NAME"))
+    query_response = index.query(
+        vector=[0.0] * 1536,  # dummy vector if you want only metadata filter search
+        top_k=10,
+        filter={
+            "title": {"$eq": "🏠 Phòng trọ cao cấp dạng Studio Full NT - Trung tâm Q. Bình Thạnh"}
+        },
+        include_metadata=True
+    )
+
+    print(query_response)

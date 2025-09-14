@@ -1,0 +1,47 @@
+﻿question,reference,rag_answer,context,faithfulness_score,answer_relevancy_score,context_recall_score,context_precision_score
+Khoảng 30 tỷ,"Nhà bán hoặc cho thuê, Đường Nguyễn Oanh, Gò Vấp, Hồ Chí Minh","Dựa trên thông tin bạn cung cấp, dưới đây là một lựa chọn BĐS phù hợp:
+
+**Bán nhanh biệt thự Xịn Vinhomes Central Park**
+- Địa chỉ: 208, Nguyễn Hữu Cảnh, Bình Thạnh, Hồ Chí Minh
+- Giá: 9,500,000,000 VND
+- Diện tích: 300m2 
+- Đặc điểm: Nhà biệt thự, 4 phòng ngủ, 4 phòng tắm, 3 tầng, hướng Bắc, đã có sổ, nội thất đầy đủ
+- Loại: Bán
+
+Dựa trên thông tin trên, biệt thự tại Vinhomes Central Park có thể là một lựa chọn phù hợp với ngân sách của bạn. Bạn có thể xem thêm thông tin chi tiết và liên hệ để biết thêm thông tin.","# Nhu cầu bất động sản phục hồi với xu hướng đa dạng hóa và chênh lệch rõ giữa giá kỳ vọng và nguồn cung thực tế  
+| Loại hình BĐS được khách hàng ưu tiên chọn lựa |     |        |               |         |                | Mục đích chính khi mua BĐS  |                           |       |
+| ---------------------------------------------- | --- | ------ | ------------- | ------- | -------------- | --------------------------- | ------------------------- | ----- | | # CÁC DOANH NGHIỆP BĐS | - Quy hoạch bài bản, mang lại giá trị sống cao cho cư dân. Sở hữu hệ thống hạ tầng, tiện ích đầy đủ (trường học, bệnh viện, trung tâm thương mại,…) trong KĐT.
+- Nằm trên các tuyến đường lớn kết nối với khu vực trung tâm và sở hữu mạng lưới phương tiện công cộng (xe bus, tàu điện) phục vụ di chuyển thuận tiện đến nội thành.  
+VCBS RESEARCH DEPARTMENT ∣ Nguồn: VCBS tổng hợp | # Vietcombark Securities  
+Hoạt động giao dịch và thanh khoản thị trường dự báo ghi nhận mức tăng trưởng tích cực trong năm 2025  
+% Mặt bằng lãi suất huy động &#x26; cho vay mua nhà vẫn duy trì ở mức hợp lý  
+- Kích thích nhu cầu mua BĐS cho cả mục đích để ở lẫn đầu tư.
+- BĐS vẫn là kênh đầu tư được ưa chuộng trong môi trường lãi suất thấp xét đến:
+1. Thị hiếu người dân Việt Nam,
+2. Lịch sử tăng giá tốt trong dài hạn, | 
+        Title: bán nhanh biệt thự Xịn Vinhomes Central Park
+        Description: - Diện tích 120m2, thiết kế 3PN, 3WC, hướng cửa chính Đông, ban công Nam, phong thủy tốt.
+- Nội thất đầy đủ, sẵn sàng vào ở, mang lại sự tiện nghi tối đa cho cư dân.
+- Pháp lý đầy đủ, đảm bảo an tâm cho khách hàng.
+
++ Thông tin dự án:
+- Vinhomes Central Park tọa lạc tại 208 Nguyễn Hữu Cảnh, phường 22, quận Bình Thạnh, TP.HCM.
+- Dự án được đầu tư bởi VinGroup, bao gồm 18 tòa căn hộ và 88 căn biệt thự.
+- Tiện ích 5 sao với bệnh viện Vinmec, trường học Vinschool, TTTM Vincom, phòng gym, spa, vườn nướng BBQ.
+
++ Tiện ích xung quanh:
+- Gần các siêu thị như Con Cưng, Genshai Saigon Pearl, siêu thị điện máy Tự Do.
+- Các công viên như Bình An, Vinhomes Central Park và Vinhomes Tân Cảng.
+- Hệ thống giáo dục và y tế phát triển như Kalei Preschool, bệnh viện đa khoa quốc tế Vinmec.
+
+Liên hệ ngay để biết thêm thông tin chi tiết, vui lòng gặp Thành Phạm
+        Address: 208, Nguyễn Hữu Cảnh, Bình Thạnh, Hồ Chí Minh
+        Price: 9500000000.0
+        Properties: {'houseType': 'Nhà biệt thự', 'bathrooms': '4', 'bedrooms': '4', 'floors': '3', 'mainDirection': 'Bắc', 'legalDocs': 'Đã có sổ', 'interiorStatus': 'Nội thất đầy đủ'}
+        Type: SELL
+        Status: SHOW,
+        LandArea: 300.0,
+        Width:80,
+        Length:50,
+        UsableArea: 500.0,
+        ",0.7777777777777778,0.26782903531286567,0.0,0.0
