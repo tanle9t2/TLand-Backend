@@ -11,13 +11,11 @@ import time
 
 from utils.helper import get_project_root, get_data_path
 
-URL = "https://www.nhatot.com/mua-ban-nha-dat-tp-ho-chi-minh"
+URL = "https://www.nhatot.com/mua-ban-nha-dat-tp-ho-chi-minh?price=0-10100000000"
 
 column_order = [
     "address",
     "area",
-    "frontage",
-    "access_road",
     "house_direction",
     "balcony_direction",
     "floors",
@@ -26,7 +24,9 @@ column_order = [
     "legal_status",
     "furniture_state",
     "price",
-    "year"
+    "year",
+    "property_type",
+    "property_feature"
 ]
 
 
@@ -80,11 +80,24 @@ def extract_number(text):
     return float(match.group()) if match else None
 
 
-def extract_int(text):
+def extract_int(text, overflow_plus=1):
     if not text:
         return None
+
+    text = text.lower()
+
+    if "nhiều" in text:
+        match = re.search(r"\d+", text)
+        if match:
+            return int(match.group()) + overflow_plus
+        return None
+
+    # case bình thường
     match = re.search(r"\d+", text)
-    return int(match.group()) if match else 1
+    if match:
+        return int(match.group())
+
+    return None
 
 
 def normalize_furniture(value):
@@ -123,7 +136,6 @@ def get_detail(driver, link):
     print("Crawling:", link)
 
     driver.get(link)
-    time.sleep(5)
 
     price = None
     address_detail = None
@@ -174,6 +186,8 @@ def get_detail(driver, link):
                 raw_properties.get("Diện tích đất")
                 or raw_properties.get("Diện tích")
             ),
+            "property_type": raw_properties.get("Loại hình"),
+            "property_feature": raw_properties.get("Đặc điểm"),
             "floors": extract_int(raw_properties.get("Tổng số tầng")),
             "bedrooms": extract_int(raw_properties.get("Số phòng ngủ")),
             "bathrooms": extract_int(raw_properties.get("Số phòng vệ sinh")),
@@ -185,6 +199,7 @@ def get_detail(driver, link):
             "furniture_state": normalize_furniture(
                 raw_properties.get("Tình trạng nội thất")
             ) if raw_properties.get("Tình trạng nội thất") else None
+
         }
 
 
@@ -205,11 +220,11 @@ def crawl(start_page=1, end_page=5):
     driver = init_driver()
     seen_links = set()
 
-    file_path = get_data_path("../data/nhatot.csv")
+    file_path = get_data_path("../data/nhatot_new.csv")
 
     for page in range(start_page, end_page + 1):
 
-        url = f"{URL}?page={page}"
+        url = f"{URL}&page={page}"
         print(f"\n===== PAGE {page} =====")
 
         driver.get(url)
@@ -255,5 +270,5 @@ def crawl(start_page=1, end_page=5):
 
 
 if __name__ == "__main__":
-    crawl(start_page=350, end_page=500)
+    crawl(start_page=500, end_page=1000)
     print("Crawl finished")

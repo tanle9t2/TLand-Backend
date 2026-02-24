@@ -1,44 +1,49 @@
-NUM_FEATURES = [
+NUM_FEATURES_ORIGIN = [
     # Size & structure
+    "year",
     "area",
-    "log_area",
-    "total_rooms",
     "bedrooms",
     "bathrooms",
     "floors",
-    "bathroom_bedroom_ratio",
-
-    # Road & frontage
-    "frontage",
-    "access_road",
-    "frontage_area_ratio",
-
-    # Location raw
     "lat",
     "lng",
+
+]
+NUM_FEATURES = [
+    # Core structure
+    "year",
+    "log_area",
+    "bedrooms",
+    "bathrooms",
+    "floors",
+    "lat",
+    "lng",
+
+    # Location strength
     "dist_center",
-
-    # Location context (rất mạnh)
+    "log_dist_center",
+    # Zone context
     "zone_price_mean",
-    "neighbor_price_median",
-    "neighbor_count",
 
-    # Density / neighborhood
-    "neighbor_density",
+    # KNN context
     "knn_price_mean",
     "knn_price_std",
+    "neighbor_count",
+    "neighbor_density",
 
-    # Interactions
+    # Interactions (rất mạnh)
     "area_zone_price",
     "area_x_bedrooms",
     "floor_x_area",
+    "floor_density"
+
 ]
 
 CAT_FEATURES = [
-    "house_direction",
-    "balcony_direction",
     "legal_status",
-    "furniture_state"
+    "furniture_state",
+    "property_type",
+    "property_feature"
 ]
 HCM_KEYWORD = [
     "hồ chí minh",
@@ -47,6 +52,9 @@ HCM_KEYWORD = [
     "tp hcm",
     "tp. hồ chí minh"
 ]
+NUM_COLUMNS = ['address', 'area', 'frontage', 'access_road', 'house_direction',
+               'balcony_direction', 'floors', 'bedrooms', 'bathrooms', 'legal_status',
+               'furniture_state', 'price', 'year', 'lat', 'lng']
 HCM_CENTER_LAT = 10.7769
 HCM_CENTER_LNG = 106.7009
 

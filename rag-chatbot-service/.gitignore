@@ -6,6 +6,16 @@ __pycache__/
 # C extensions
 *.so
 
+trainning/catboost_info
+trainning/.ipynb_checkpoints
+output.csv
+data/nhatot_new.csv
+data/nhatot.csv
+data/vietnam_housing_dataset.csv
+data/ho_chi_minh_pricing.csv
+data/ho_chi_minh_pricing_new.csv
+data/ho_chi_minh_pricing_clean.csv
+features/geocode_cache.csv
 # Virtual environments
 venv/
 env/

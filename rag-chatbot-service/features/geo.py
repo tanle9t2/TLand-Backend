@@ -136,23 +136,14 @@ def filter_hcm_data(dataset):
 
 
 if __name__ == "__main__":
-    df = pd.read_csv(get_data_path("ho_chi_minh_pricing_clean.csv"))
+    input_path = get_data_path("ho_chi_minh_pricing_new.csv")
+    # "nhatot.csv"
+    # "ho_chi_minh_pricing" "vietnam_housing_dataset"
+    df = pd.read_csv(input_path)
 
-    df = build_features(df=df, mode="train", save_cluster_model=True)
+    df_hcm = get_geo_data(df)
 
-    df = df[(df.price > df.price.quantile(0.01)) &
-            (df.price < df.price.quantile(0.99))]
+    output_path = get_data_path("final_data.csv")
+    append_csv(df_hcm, output_path)
 
-    df.to_csv("feat.csv", header=True, index=False, encoding="utf-8-sig")
-
-    # input_path = get_data_path("ho_chi_minh_pricing.csv")
-    # # "nhatot.csv"
-    # # "ho_chi_minh_pricing" "vietnam_housing_dataset"
-    # df = pd.read_csv(input_path)
-    #
-    # df_hcm = get_geo_data(df)
-    #
-    # output_path = get_data_path("ho_chi_minh_pricing_clean.csv")
-    # append_csv(df_hcm, output_path)
-    #
-    # print(f"💾 Data appended to: {output_path}")
+    print(f"💾 Data appended to: {output_path}")
