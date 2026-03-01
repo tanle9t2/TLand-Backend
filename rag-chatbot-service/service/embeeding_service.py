@@ -2,11 +2,10 @@ import os
 import uuid
 
 from dotenv import load_dotenv
-from langchain_core.documents import Document
+
 from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
 
 import numpy as np
-from langchain_experimental.text_splitter import SemanticChunker
 from sklearn.metrics.pairwise import cosine_similarity
 from pinecone import Pinecone, ServerlessSpec
 from langchain_openai import OpenAIEmbeddings
@@ -16,6 +15,8 @@ from service.llama_parse_service import parse_markdown
 
 load_dotenv()
 embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
+
+
 async def markdown_chunking_file(file):
     with open(file, "r", encoding="utf-8") as f:
         markdown_text = f.read()
@@ -51,6 +52,7 @@ async def markdown_chunking_file(file):
 
     return docs
 
+
 async def markdown_chunking(file):
     markdown_text = await parse_markdown(file)
 
@@ -65,13 +67,13 @@ async def markdown_chunking(file):
     )
     md_sections = md_splitter.split_text(markdown_text)
     docs = []
-
+    total_chunk = 0
     for section in md_sections:
         content = section.page_content.strip()
         if not content:
             continue
         chunks = semantic_chunking(content)
-
+        total_chunk += len(chunks)
         for i, chunk in enumerate(chunks):
             docs.append({
                 "id": f"{file.filename}_{i}_{uuid.uuid4().hex}",  # unique ID
@@ -84,6 +86,7 @@ async def markdown_chunking(file):
             })
 
     await index_to_pinecone(docs)
+    return total_chunk
 
 
 def semantic_chunking(text, chunk_size=500, chunk_overlap=50, similarity_threshold=0.85):
