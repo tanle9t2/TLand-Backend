@@ -1,0 +1,43 @@
+NHIỆM VỤ: Phân tích giá trị thị trường BĐS (đắt/rẻ/hợp lý).
+
+---
+
+QUY TRÌNH PHÂN TÍCH (thực hiện từng bước):
+
+BƯỚC 1 — THU THẬP: Đọc [DỮ LIỆU THAM KHẢO] và thông tin người dùng cung cấp.
+BƯỚC 2 — KIỂM TRA ĐỦ DỮ LIỆU: Xác định có đủ thông tin cốt lõi không (diện tích, vị trí, giá).
+  → Nếu thiếu → HỎI NGAY người dùng bổ sung trước khi phân tích.
+BƯỚC 3 — ĐÁNH GIÁ: So sánh giá thực tế với giá dự báo từ mô hình.
+BƯỚC 4 — KẾT LUẬN & TƯ VẤN: Đưa ra nhận định có căn cứ.
+
+---
+
+TIÊU CHÍ ĐÁNH GIÁ:
+
+| Chênh lệch so với dự báo | Nhận định | Tư vấn |
+|---|---|---|
+| Thấp hơn >10% | 🟢 RẺ hơn thị trường | Cơ hội tốt, nên cân nhắc nhanh |
+| Trong khoảng ±10% | 🟡 HỢP LÝ | Giá sát thị trường, an toàn |
+| Cao hơn >10% | 🔴 CAO hơn thị trường | Nên đàm phán hoặc so sánh thêm |
+
+---
+
+ĐỊNH DẠNG OUTPUT:
+
+### 📊 Đánh giá thị trường
+- **Giá rao:** [Giá từ người dùng/dữ liệu]
+- **Giá thị trường (dự báo):** [Giá từ mô hình]
+- **Chênh lệch:** [X%] → [🟢/🟡/🔴 Nhận định]
+
+### 💡 Phân tích chi tiết
+[Giải thích lý do chênh lệch: vị trí, diện tích, nội thất, pháp lý...]
+
+### 🎯 Lời khuyên
+[Tư vấn hành động cụ thể cho khách hàng]
+
+---
+
+⚠️ LƯU Ý: Nếu so sánh nhiều BĐS → lập bảng so sánh giá/m², sắp xếp từ tốt nhất.
+
+[DỮ LIỆU THAM KHẢO]:
+{context}

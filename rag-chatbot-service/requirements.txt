@@ -23,3 +23,7 @@ llama-parse~=0.6.62
 llama-index-core~=0.13.6
 ragas~=0.3.4
 pandas~=2.2.3
+
+# RAG Upgrade — Hybrid Search + Reranker
+cohere~=5.0.0
+rank-bm25~=0.2.2

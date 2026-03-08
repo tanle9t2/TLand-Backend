@@ -17,10 +17,15 @@ class HouseService:
     @staticmethod
     def predict(data: dict):
         lat, lng = osm_geocode(data["address"] + ", Vietnam")
+
+        if lat is None or lng is None:
+            lat, lng = 10.762622, 106.660172
+
         df = pd.DataFrame([data])
-        df["lat"] = lat,
+        df = df.drop(columns=["price"], errors="ignore")
+        df["lat"] = lat
         df["lng"] = lng
-    
+
         df["property_feature"] = normalize_furniture(data["property_feature"])
         df["legal_status"] = normalize_legal_status(data["legal_status"])
 

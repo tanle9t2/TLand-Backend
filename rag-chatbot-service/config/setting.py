@@ -1,4 +1,4 @@
-NUM_FEATURES_ORIGIN = [
+NUM_FEATURES_ORIGINAL = [
     # Size & structure
     "year",
     "area",
@@ -9,6 +9,14 @@ NUM_FEATURES_ORIGIN = [
     "lng",
 
 ]
+NUM_FEATURES_REQUIRED = [
+    "area",
+    "floors",
+    "bathrooms",
+    "bedrooms",
+    "address",
+]
+
 NUM_FEATURES = [
     # Core structure
     "year",

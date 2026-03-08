@@ -1,195 +1,223 @@
 import os
 from dotenv import load_dotenv
 from langchain.schema import HumanMessage, AIMessage
-from langchain_core.messages import BaseMessage
-from langchain.prompts import PromptTemplate
-from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_pinecone import PineconeVectorStore
-from pinecone import Pinecone
-from langchain.chains import create_history_aware_retriever, create_retrieval_chain
-from langchain.chains import ConversationalRetrievalChain
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain.chains import create_history_aware_retriever, create_retrieval_chain
 from langchain.chains.combine_documents import create_stuff_documents_chain
+from langchain_openai import ChatOpenAI
+from langchain.schema import Document
+
+from service.filter_builder import extract_filters
+from service.hybrid_search_service import hybrid_search
+from service.reranker_service import rerank_documents
+from service.price_evaluation_service import price_evaluator
 
 load_dotenv()
 
-llm_model = os.getenv("LLM_MODEL")
-def load_vectorstore():
-    pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
-    index_name = os.getenv("PINECONE_INDEX_NAME")
-    index = pc.Index(index_name)
-    embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
-    vectorstore = PineconeVectorStore(
-        index=index,
-        embedding=embedding_model,
-        text_key="text"
-    )
-    return vectorstore
+llm_model = os.getenv("LLM_MODEL", "gpt-4o-mini")
+
+import os
+from pathlib import Path
+
+PROMPT_DIR = Path(__file__).parent.parent / "prompt"
+
+
+def _load_prompt(filename: str) -> str:
+    path = PROMPT_DIR / filename
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+_BASE_PERSONA = _load_prompt("base_persona.txt")
+_CONSULTATION_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("consultation_prompt.txt")
+_MARKET_ANALYSIS_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("market_analysis_prompt.txt")
+_BANK_LOAN_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("bank_loan_prompt.txt")
+
+
+def _detect_intent(query: str, standalone_query: str, llm: ChatOpenAI) -> str:
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", "Phân loại yêu cầu của người dùng vào 1 trong 3 loại: "
+                   "'MARKET_ANALYSIS' (hỏi đắt rẻ, so sánh giá, nhận định thị trường BĐS), "
+                   "'BANK_LOAN' (hỏi về vay vốn ngân hàng, thiếu tiền, tài chính yếu, hỗ trợ tài chính, lãi suất), "
+                   "hoặc 'CONSULTATION' (tìm nhà, hỏi thông tin chung). "
+                   "Chỉ trả về đúng 1 từ khóa duy nhất."),
+        ("human", "Câu hỏi gốc: {query}\nCâu diễn giải có ngữ cảnh: {standalone_query}")
+    ])
+    chain = prompt | llm
+    response = chain.invoke({"query": query, "standalone_query": standalone_query})
+    intent = response.content.strip().upper()
+
+    if "MARKET_ANALYSIS" in intent:
+        return "MARKET_ANALYSIS"
+    if "BANK_LOAN" in intent:
+        return "BANK_LOAN"
+    return "CONSULTATION"
 
 
 def ask_question(query: str, chat_history=None, k: int = 5):
-    vectorstore = load_vectorstore()
-    retriever = vectorstore.as_retriever(search_kwargs={"k": k})
-    llm = ChatOpenAI(model=llm_model, temperature=0)
-
-    # Contextualize question prompt
-    contextualize_q_prompt = ChatPromptTemplate.from_messages([
-        ("system",
-         "Dựa vào lịch sử hội thoại và câu hỏi mới nhất, hãy viết lại câu hỏi "
-         "sao cho có thể hiểu được mà không cần lịch sử hội thoại. "
-         "Chỉ viết lại câu hỏi, không trả lời câu hỏi."),
-        MessagesPlaceholder("chat_history"),
-        ("human", "{input}"),
-    ])
-
-    # Create history-aware retriever
-    history_aware_retriever = create_history_aware_retriever(
-        llm, retriever, contextualize_q_prompt
-    )
-
-    # Answer question prompt
-
-    system_prompt = """
-        Bạn là chuyên gia tư vấn bất động sản hàng đầu tại Việt Nam với 10+ năm kinh nghiệm thực tế.
-        
-        CHUYÊN MÔN VÀ KINH NGHIỆM:
-        - Tư vấn BĐS: chung cư, nhà phố, đất nền
-        - Tư vấn tài chính: các gói vay ngân hàng, lãi suất, thủ tục pháp lý
-        - Am hiểu sâu thị trường BĐS các tỉnh thành phố lớn
-        - Chuyên phân tích xu hướng giá, quy hoạch, và tiềm năng đầu tư
-        
-        PHONG CÁCH GIAO TIẾP:
-        - Nói chuyện tự nhiên, thân thiện như người bạn tin cậy
-        - Giải thích phức tạp thành đơn giản, dễ hiểu
-        - Luôn đưa ra ví dụ cụ thể và so sánh rõ ràng
-        - Tư vấn phù hợp với từng nhóm khách hàng (thu nhập, nhu cầu)
-        
-        QUY TẮC XỬ LÝ DỮ LIỆU QUAN TRỌNG NHẤT:
-        
-        1. TIÊU CHÍ KHỚP THÔNG MINH:
-        
-        HOÀN TOÀN KHỚP (ưu tiên cao nhất):
-        - Khu vực: Tên quận/huyện giống nhau hoặc tương tự (Gò Vấp = GV)
-        - Giá: Trong khoảng ±15% yêu cầu
-        - Loại BĐS: Đúng nhu cầu (mua/thuê)
-        - Tên đường: Tương tự hoặc gần giống (Nguyễn Oanh ≈ Nguyễn Anh)
-        
-        KHỚP MỘT PHẦN (chấp nhận được):  
-        - Khu vực: Quận/huyện liền kề hoặc cùng khu vực lớn
-        - Giá: Trong khoảng ±30% yêu cầu
-        - Loại hình tương tự
-        
-        KHÔNG KHỚP (loại bỏ):
-        - Khác quận/huyện hoàn toàn xa xôi
-        - Giá chênh lệch >50%
-        - Sai loại hình hoàn toàn (thuê khi cần mua)
-        
-        2. LOGIC XỬ LÝ TỪNG TRƯỜNG HỢP:
-        
-        TRƯỜNG HỢP A: CÓ BĐS KHỚP HOÀN TOÀN
-        - Đầu câu: "Tôi tìm thấy BĐS phù hợp với yêu cầu của bạn:"
-        - Liệt kê BĐS khớp với thông tin chi tiết
-        - Phân tích ưu/nhược điểm dựa trên data
-        
-        TRƯỜNG HỢP B: CÓ BĐS KHỚP MỘT PHẦN
-        - Đầu câu: "Dựa trên dữ liệu hiện có, tôi có thể gợi ý các lựa chọn gần đúng với yêu cầu của bạn:"
-        - Giải thích lý do tại sao gợi ý (giá tương tự, khu vực gần...)
-        - Đưa ra 2-3 lựa chọn tốt nhất
-        
-        TRƯỜNG HỢP C: KHÔNG CÓ BĐS PHÙ HỢP
-        - Đầu câu: "Dựa trên dữ liệu hiện có, tôi không tìm thấy BĐS phù hợp với yêu cầu cụ thể của bạn."
-        - Phân tích nguyên nhân (không có trong khu vực, giá không phù hợp...)
-        - Gợi ý điều chỉnh tiêu chí
-        
-        3. TRÍCH DẪN TRỰC TIẾP: Khi đề cập BĐS cụ thể, phải nêu chính xác:
-        - Tiêu đề: "{{Title}}"
-        - Địa chỉ như trong data: "{{Address}}"
-        - Giá chính xác: "{{Price}}" VND
-        - Đặc điểm: "{{Properties}}"
-        - Diện tích: "{{LandArea}}" m2
-        
-        4. FORMAT CHUẨN khi giới thiệu BĐS:
-        
-        **[Tên/Mô tả từ Title]**
-        - Địa chỉ: [Address chính xác]
-        - Giá: [Price] VND ([Price/LandArea]/m² nếu có)
-        - Diện tích: [LandArea]m² 
-        - Đặc điểm: [Properties]
-        - Loại: [Type - BÁN/CHO THUÊ]
-        - Đánh giá: [Phân tích ưu/nhược điểm dựa trên dữ liệu]
-        
-        5. NGÔN NGỮ TỰ NHIÊN:
-        - "Tôi tìm thấy..." thay vì "Hệ thống tìm thấy..."
-        - "Theo kinh nghiệm của tôi..." 
-        - "Tôi khuyên bạn nên..."
-        - "Điểm mạnh/yếu của căn này là..."
-        
-        KHÔNG ĐƯỢC:
-        - Tạo ra tên dự án không có trong context
-        - Tự tính toán giá trung bình ngoài context
-        - Đưa ra tiện ích, số liệu không có trong context
-        - Mô tả tiện ích không được đề cập
-        - Sử dụng kiến thức chung ngoài context
-        - Nói "không tìm thấy" khi có BĐS gần đúng yêu cầu
-        
-        CẤU TRÚC TRẢ LỜI CHUẨN:
-        1. Phân tích nhu cầu khách hàng
-        2. Áp dụng logic khớp thông minh
-        3. Đưa ra lựa chọn phù hợp với format chuẩn
-        4. So sánh ưu/nhược dựa trên data có sẵn
-        5. Kết thúc: Hỏi thêm hoặc gợi ý bước tiếp theo
-        
-        DỮ LIỆU THAM KHẢO:
-        {context}
-        
-        Hãy trả lời với vai trò chuyên gia, luôn đảm bảo tính chính xác và đáng tin cậy, đồng thời áp dụng logic khớp thông minh để không bỏ sót BĐS phù hợp với khách hàng.
     """
+      1. Auto-extract metadata filters from query
+      2. Hybrid search (vector + BM25 + RRF) with filters
+      3. Cohere reranker
+      4. LLM answer generation
+    """
+    llm = ChatOpenAI(model=llm_model, temperature=0)
+    formatted_history = _format_chat_history(chat_history)
 
-    qa_prompt = ChatPromptTemplate.from_messages([
-        ("system", system_prompt),
+    if len(formatted_history) > 10:
+        formatted_history = formatted_history[-10:]
+
+    contextualize_q_prompt = ChatPromptTemplate.from_messages([
+        (
+            "system",
+            "Bạn là một trợ lý ảo chuyên tổng hợp lại câu/yêu cầu của người dùng dựa trên lịch sử hội thoại.\n\n"
+            "NHIỆM VỤ: Đọc hiểu TOÀN BỘ lịch sử hội thoại và câu mới nhất của người dùng. "
+            "Sau đó, viết lại nội dung mới nhất thành MỘT CÂU ĐỘC LẬP (standalone query) có chứa ĐẦY ĐỦ ngữ cảnh từ lịch sử (Khu vực, Ngân sách, Loại hình, Diện tích...).\n\n"
+            "QUY TẮC BẮT BUỘC:\n"
+            "1. CHỈ TRẢ VỀ kết quả duy nhất là CÂU ĐÃ VIẾT LẠI, TUYỆT ĐỐI KHÔNG giải thích, KHÔNG có ngữ đầu ngữ cuối như 'Để tôi tổng hợp...', 'Câu hỏi của bạn là...'.\n"
+            "2. Đưa các tiêu chí cụ thể (nếu có từ lịch sử) ghép vào chung với câu hiện tại.\n"
+            "3. Nếu BĐS đang được quan tâm có sẵn các thông số kỹ thuật (Diện tích, Số tầng, Phòng ngủ, Phòng tắm...) từ các câu trước, TUYỆT ĐỐI GHI LẠI ĐẦY ĐỦ các thông số này trong câu viết lại. Đừng bỏ sót (Ví dụ: 100m2, 1 tầng, 1 phòng ngủ).\n"
+            "4. Nếu câu mới nhất mang tính chất hỏi (VD: hỏi mức giá, tiện ích), hãy ĐẢM BẢO viết lại như một câu hỏi kết hợp tiêu chí (VD: 'Nhà để ở tại Gò Vấp, ngân sách 5 tỷ có mức giá như thế nào?').\n"
+            "5. Nếu người dùng thay đổi tiêu chí, hãy dùng giá trị hiện tại phù hợp nhất.\n"
+            "6. ĐẶC BIỆT QUAN TRỌNG: Phải BẢO TOÀN YÊU CẦU/Ý ĐỊNH CỐT LÕI của câu mới nhất (ví dụ: than phiền thiếu tiền, hỏi vay vốn ngân hàng, hỏi giá đắt rẻ...). KHÔNG được làm mất ý định này bằng cách tự biến nó thành 1 câu đi tìm nhà đơn thuần.",
+        ),
         MessagesPlaceholder("chat_history"),
         ("human", "{input}"),
     ])
 
-    # Create document chain
-    question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
-
-    # Create final RAG chain
-    rag_chain = create_retrieval_chain(history_aware_retriever, question_answer_chain)
-
-    # Format chat history properly
-    formatted_history = []
-    if chat_history:
-        for msg in chat_history:
-            if isinstance(msg, dict):
-                if msg.get("human"):
-                    formatted_history.append(HumanMessage(content=msg["human"]))
-                if msg.get("ai"):
-                    formatted_history.append(AIMessage(content=msg["ai"]))
-            elif hasattr(msg, 'content'):  # Already BaseMessage
-                formatted_history.append(msg)
-
-    try:
-        # Invoke the chain
-        response = rag_chain.invoke({
+    if formatted_history:
+        contextualize_q_chain = contextualize_q_prompt | llm
+        standalone_query = contextualize_q_chain.invoke({
             "input": query,
             "chat_history": formatted_history
+        }).content
+    else:
+        standalone_query = query
+
+    # 3. Intent Detection using standalone query
+    # Chuyển việc detect intent LÊN TRONG để quyết định chiến lược search
+    intent = _detect_intent(query, standalone_query, llm)
+    print(f"[DEBUG] query: {query}")
+    print(f"[DEBUG] standalone_query: {standalone_query}")
+    print(f"[DEBUG] Detected intent: {intent}")
+
+    if intent == "MARKET_ANALYSIS":
+        selected_prompt = _MARKET_ANALYSIS_PROMPT
+    elif intent == "BANK_LOAN":
+        selected_prompt = _BANK_LOAN_PROMPT
+    else:
+        selected_prompt = _CONSULTATION_PROMPT
+
+    pinecone_filter = None
+    if intent != "BANK_LOAN":
+        pinecone_filter = extract_filters(standalone_query)
+
+    print(f"[DEBUG] Pinecone filter: {pinecone_filter}")
+
+    raw_results = hybrid_search(
+        query=standalone_query,
+        pinecone_filter=pinecone_filter,
+        vector_top_k=20,
+        final_top_k=10,
+    )
+    print(f"[DEBUG] Raw results count: {len(raw_results)}")
+
+    doc_texts = [r["text"] for r in raw_results]
+    reranked_texts = rerank_documents(query=standalone_query, documents=doc_texts, top_n=k)
+    print(f"[DEBUG] Reranked texts count: {len(reranked_texts)}")
+
+    for i, text in enumerate(reranked_texts, 1):
+        print(f"\n===== Document {i} =====")
+        print(text.strip()[:200])
+    docs = []
+
+    for text in reranked_texts:
+        docs.append(Document(page_content=text))
+    enriched_texts = reranked_texts
+
+    print(f"[DEBUG] Docs passed to LLM: {len(docs)}")
+
+    if not docs:
+        docs.append(Document(
+            page_content=(
+                "⚠️ KHÔNG CÓ DỮ LIỆU — Hệ thống không tìm thấy BĐS nào phù hợp với tiêu chí tìm kiếm.\n"
+                "KHÔNG ĐƯỢC bịa ra bất kỳ BĐS nào.\n"
+                "Hãy thông báo cho người dùng và gợi ý CỤ THỂ:\n"
+                "1. Khu vực lân cận có thể có BĐS phù hợp hơn\n"
+                "2. Điều chỉnh khoảng giá (tăng/giảm)\n"
+                "3. Thử loại hình BĐS khác (căn hộ thay nhà phố, v.v.)\n"
+                "4. Bỏ bớt tiêu chí lọc để mở rộng kết quả"
+            )
+        ))
+        print("[DEBUG] No docs found — injected empty-context marker")
+
+    if intent == "MARKET_ANALYSIS":
+        query_eval = price_evaluator.evaluate(standalone_query)
+
+        if query_eval.get("status") != "unknown":
+            missing = query_eval.get("missing_fields", [])
+            missing_str = ", ".join(missing) if missing else "Không"
+
+            adhoc_doc_content = (
+                f"[THÔNG TIN BĐS NGƯỜI DÙNG CUNG CẤP TRONG CÂU HỎI]:\n{standalone_query}\n\n"
+                f"[KẾT QUẢ ĐÁNH GIÁ TỪ MÔ HÌNH DỰ BÁO]:\n"
+                f"- Trạng thái: {query_eval.get('status')}\n"
+                f"- Giá dự báo thị trường: {query_eval.get('predicted_price_ty', 0):.2f} Tỷ VND\n"
+                f"- Chênh lệch: {query_eval.get('diff_percent', 0):.1f}% so với giá thực tế người dùng đưa ra\n"
+                f"- Các trường thông tin còn thiếu: {missing_str}"
+            )
+            docs.insert(0, Document(page_content=adhoc_doc_content))
+            print("Predict", adhoc_doc_content)
+
+    qa_prompt = ChatPromptTemplate.from_messages([
+        ("system", selected_prompt),
+        MessagesPlaceholder("chat_history"),
+        ("human", "{input}"),
+    ])
+
+    question_answer_chain = create_stuff_documents_chain(llm, qa_prompt)
+
+    try:
+        response = question_answer_chain.invoke({
+            "input": query,
+            "chat_history": formatted_history,
+            "context": docs,
         })
+        print(f"[DEBUG] ans: {response}")
 
         return {
-            "answer": response["answer"],
-            "context": [doc.page_content for doc in response.get("context", [])]
+            "answer": response,
+            "context": enriched_texts,
         }
 
     except Exception as e:
-        print(f"Error in ask_question_modern: {str(e)}")
+        print(f"[rag_qa] Error: {e}")
         return {
             "answer": "Xin lỗi, tôi gặp sự cố kỹ thuật. Vui lòng thử lại sau.",
-            "context": []
+            "context": [],
         }
 
 
 def get_query_vector(query: str):
+    from langchain_openai import OpenAIEmbeddings
     embedding_model = OpenAIEmbeddings(model="text-embedding-3-small")
-    vector = embedding_model.embed_query(query)
-    return vector
+    return embedding_model.embed_query(query)
+
+
+from typing import List
+from langchain_core.messages import BaseMessage
+
+
+def _format_chat_history(chat_history) -> List[BaseMessage]:
+    if not chat_history:
+        return []
+    formatted = []
+    for msg in chat_history:
+        if isinstance(msg, dict):
+            if msg.get("human"):
+                formatted.append(HumanMessage(content=msg["human"]))
+            if msg.get("ai"):
+                formatted.append(AIMessage(content=msg["ai"]))
+        elif hasattr(msg, "content"):
+            formatted.append(msg)
+    return formatted
