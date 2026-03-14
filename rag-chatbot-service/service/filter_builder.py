@@ -40,7 +40,7 @@ _BUY_KEYWORDS = ["mua", "bán", "ban", "mua bán", "sang nhượng"]
 _RENT_KEYWORDS = ["thuê", "thue", "cho thuê", "phòng trọ", "phong tro", "trọ"]
 
 
-def extract_filters(query: str) -> dict:
+def extract_filters(pre_condition: object, query: str) -> dict:
     """
     Parse a Vietnamese real estate query and return a Pinecone filter dict.
 
@@ -50,15 +50,14 @@ def extract_filters(query: str) -> dict:
               Returns {} if no filters detected.
     """
     query_lower = query.lower()
-    conditions = []
-
+    conditions = [pre_condition]
     price_filter = _extract_price_filter(query_lower)
     if price_filter:
         conditions.append(price_filter)
 
-    # district = _extract_district(query_lower)
-    # if district:
-    #     conditions.append({"province": {"$eq": district}})
+    district = _extract_district(query_lower)
+    if district:
+        conditions.append({"ward": {"$eq": district}})
 
     post_type = _extract_type(query_lower)
     if post_type:

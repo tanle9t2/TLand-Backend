@@ -2,12 +2,13 @@ from http import HTTPStatus
 from sqlalchemy.orm import Session
 
 from database import get_db
+from entity.knowledge_file import DocType
 from request.query_request import QueryRequest
 from response.query_response import QueryResponse
 from service.embeeding_service import markdown_chunking
 from service.knowledge_service import KnowledgeService
 from service.rag_qa import ask_question
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Form
 
 router = APIRouter(prefix="/api/v1/chat", tags=["Chatbot"])
 
@@ -35,10 +36,12 @@ async def root():
 
 
 @router.post("/feed")
-async def feed(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    total_chunk = await markdown_chunking(file)
+async def feed(file: UploadFile = File(...),
+               doc_type: DocType = Form(...),
+               db: Session = Depends(get_db)):
+    total_chunk = await markdown_chunking(file, doc_type)
 
-    KnowledgeService.create_file(db=db, file=file, filename=file.filename, total_chunks=total_chunk)
+    KnowledgeService.create_file(db=db, file=file, filename=file.filename, total_chunks=total_chunk, doc_type=doc_type)
     return {
         "message": "Success",
         "code": HTTPStatus.OK

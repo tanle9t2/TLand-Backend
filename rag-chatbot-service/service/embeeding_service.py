@@ -1,3 +1,4 @@
+import enum
 import os
 import re
 import uuid
@@ -7,11 +8,13 @@ from dotenv import load_dotenv
 from langchain_text_splitters import RecursiveCharacterTextSplitter, MarkdownHeaderTextSplitter
 
 import numpy as np
+from selenium.webdriver.common.actions.interaction import SOURCE_TYPES
 from sklearn.metrics.pairwise import cosine_similarity
 from pinecone import Pinecone, ServerlessSpec
 from langchain_openai import OpenAIEmbeddings
 from langchain_pinecone import PineconeVectorStore
 
+from entity.knowledge_file import DocType
 from service.llama_parse_service import parse_markdown
 
 load_dotenv()
@@ -25,20 +28,14 @@ TABLE_ROW_PATTERN = re.compile(r"^\|.*\|$", re.MULTILINE)
 TABLE_SEPARATOR_PATTERN = re.compile(r"^\|[\s\-:|]+\|$", re.MULTILINE)
 
 
-async def markdown_chunking_file(file):
-    with open(file, "r", encoding="utf-8") as f:
-        markdown_text = f.read()
-    return _process_markdown(markdown_text, file.filename)
-
-
-async def markdown_chunking(file):
+async def markdown_chunking(file, doc_type):
     markdown_text = await parse_markdown(file)
-    docs = _process_markdown(markdown_text, file.filename)
+    docs = _process_markdown(markdown_text, file.filename, doc_type)
     await index_to_pinecone(docs)
     return len(docs)
 
 
-def _process_markdown(markdown_text: str, filename: str) -> list[dict]:
+def _process_markdown(markdown_text: str, filename: str, doc_type: DocType) -> list[dict]:
     headers_to_split_on = [
         ("#", "Header 1"),
         ("##", "Header 2"),
@@ -56,7 +53,6 @@ def _process_markdown(markdown_text: str, filename: str) -> list[dict]:
         if not content:
             continue
 
-        # Build header context prefix
         header_parts = []
         for key in ("Header 1", "Header 2", "Header 3"):
             val = section.metadata.get(key)
@@ -64,7 +60,6 @@ def _process_markdown(markdown_text: str, filename: str) -> list[dict]:
                 header_parts.append(val)
         header_context = " > ".join(header_parts) if header_parts else ""
 
-        # Table-aware chunking
         chunks = _smart_markdown_chunking(content)
 
         for i, chunk in enumerate(chunks):
@@ -81,8 +76,8 @@ def _process_markdown(markdown_text: str, filename: str) -> list[dict]:
                     "section": header_context,
                     "chunk_index": i,
                     "length": len(contextualized_chunk),
-                    "source": "pdf",
-                    "text": contextualized_chunk,  # BM25 hybrid search cần field này
+                    "source": doc_type,
+                    "text": contextualized_chunk,
                 }
             })
 
@@ -161,7 +156,6 @@ def _chunk_table(table_text: str, max_rows_per_chunk: int = 15) -> list[str]:
             break
 
     if separator_idx is None:
-        # Không tìm thấy separator → trả nguyên bảng
         return [table_text]
 
     header_block = "\n".join(lines[:separator_idx + 1])
@@ -324,7 +318,7 @@ async def feed_db(data):
                 "province": province,
                 "ward": ward,
                 "land_area": float(land_area),
-                "source": "post",
+                "source": DocType.POST,
                 "text": doc_text,
             },
         })

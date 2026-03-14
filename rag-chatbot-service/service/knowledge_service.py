@@ -2,7 +2,7 @@ import math
 
 from sqlalchemy import desc, asc
 from sqlalchemy.orm import Session
-from entity.knowledge_file import KnowledgeFile, FileStatus
+from entity.knowledge_file import KnowledgeFile, FileStatus, DocType
 from service.s3_service import upload_file_to_s3
 from fastapi import File
 
@@ -10,15 +10,17 @@ from fastapi import File
 class KnowledgeService:
 
     @staticmethod
-    def create_file(db: Session, file: File(...), filename: str, total_chunks: int = 0):
+    def create_file(db: Session, file: File(...), filename: str, total_chunks: int = 0,
+                    doc_type: DocType = DocType.GENERAL):
         file_url = upload_file_to_s3(file)
 
         new_file = KnowledgeFile(
             file_url=file_url,
             filename=filename,
             total_chunks=total_chunks,
+            doc_type=doc_type
         )
-        print(db)
+
         db.add(new_file)
         db.commit()
         db.refresh(new_file)

@@ -5,7 +5,7 @@ Uses rerank-multilingual-v3.0 for Vietnamese language support.
 """
 
 import os
-from typing import Optional
+from typing import Optional, Any, Dict, List
 
 import cohere
 from dotenv import load_dotenv
@@ -27,34 +27,36 @@ def _get_client() -> cohere.Client:
     return _client
 
 
-def rerank_documents(query: str, documents: list[str], top_n: int = 5) -> list[str]:
+def rerank_documents(query: str, documents: List[Dict[str, Any]], top_n: int = 10) -> List[Dict[str, Any]]:
     """
-    Rerank a list of document strings by relevance to the query.
+    Rerank a list of document dicts by relevance to the query.
 
     Args:
         query:     User query string.
-        documents: List of document strings to rerank.
+        documents: List of document dicts to rerank (must contain 'text' key).
         top_n:     Number of top documents to return after reranking.
 
     Returns:
-        List of document strings sorted by relevance (most relevant first).
+        List of document dicts sorted by relevance (most relevant first).
     """
     if not documents:
         return []
-
 
     if len(documents) <= top_n:
         return documents
 
     try:
         client = _get_client()
+        # Cần trích xuất list text riêng để gửi qua Cohere
+        doc_texts = [doc.get("text", "") for doc in documents]
+        
         response = client.rerank(
             model=_RERANK_MODEL,
             query=query,
-            documents=documents,
+            documents=doc_texts,
             top_n=top_n,
         )
-        # Return docs in reranked order
+        # Sử dụng result.index để map lại object dict ban đầu
         return [documents[result.index] for result in response.results]
 
     except Exception as e:

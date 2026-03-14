@@ -1,9 +1,7 @@
-from typing import List
+from typing import List, Dict, Any
+from response.camel_model import CamelModel
 
-from pydantic import BaseModel
 
-
-class QueryResponse(BaseModel):
-    answer: str
+class QueryResponse(CamelModel):
+    answer: Dict[str, Any]
     context: list
-

@@ -8,5 +8,6 @@ class KnowledgeResponse(CamelModel):
     filename: str
     file_url: str
     total_chunks: int
+    doc_type: str
     status: str
     created_at: datetime
