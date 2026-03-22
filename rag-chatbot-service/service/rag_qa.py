@@ -174,17 +174,26 @@ def ask_question(query: str, chat_history=None, k: int = 5):
     print(f"[DEBUG] Docs passed to LLM: {len(docs)}")
 
     if not docs:
-        docs.append(Document(
-            page_content=(
-                "⚠️ KHÔNG CÓ DỮ LIỆU — Hệ thống không tìm thấy BĐS nào phù hợp với tiêu chí tìm kiếm.\n"
-                "KHÔNG ĐƯỢC bịa ra bất kỳ BĐS nào.\n"
-                "Hãy thông báo cho người dùng và gợi ý CỤ THỂ:\n"
-                "1. Khu vực lân cận có thể có BĐS phù hợp hơn\n"
-                "2. Điều chỉnh khoảng giá (tăng/giảm)\n"
-                "3. Thử loại hình BĐS khác (căn hộ thay nhà phố, v.v.)\n"
-                "4. Bỏ bớt tiêu chí lọc để mở rộng kết quả"
-            )
-        ))
+        if intent == "MARKET_ANALYSIS":
+            docs.append(Document(
+                page_content=(
+                    "Không có dữ liệu tham khảo từ thị trường. "
+                    "Hãy dựa hoàn toàn vào [KẾT QUẢ ĐÁNH GIÁ TỪ MÔ HÌNH DỰ BÁO] để phân tích. "
+                    "Nếu mô hình thiếu thông tin, hãy hỏi người dùng bổ sung các trường còn thiếu."
+                )
+            ))
+        else:
+            docs.append(Document(
+                page_content=(
+                    "⚠️ KHÔNG CÓ DỮ LIỆU — Hệ thống không tìm thấy BĐS nào phù hợp với tiêu chí tìm kiếm.\n"
+                    "KHÔNG ĐƯỢC bịa ra bất kỳ BĐS nào.\n"
+                    "Hãy thông báo cho người dùng và gợi ý CỤ THỂ:\n"
+                    "1. Khu vực lân cận có thể có BĐS phù hợp hơn\n"
+                    "2. Điều chỉnh khoảng giá (tăng/giảm)\n"
+                    "3. Thử loại hình BĐS khác (căn hộ thay nhà phố, v.v.)\n"
+                    "4. Bỏ bớt tiêu chí lọc để mở rộng kết quả"
+                )
+            ))
         print("[DEBUG] No docs found — injected empty-context marker")
 
     if intent == "MARKET_ANALYSIS":
@@ -234,7 +243,10 @@ def ask_question(query: str, chat_history=None, k: int = 5):
         ("human", "Lịch sử ngữ cảnh:\n{context}\n\nCâu hỏi: {input}")
     ])
 
-    chain = qa_prompt | llm
+    if intent in ("BANK_LOAN", "MARKET_ANALYSIS"):
+        chain = qa_prompt | llm.bind(response_format={"type": "json_object"})
+    else:
+        chain = qa_prompt | llm
 
     try:
         response = chain.invoke({

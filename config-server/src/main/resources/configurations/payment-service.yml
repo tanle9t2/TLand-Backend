@@ -38,8 +38,8 @@ spring:
 payment:
   vnPay:
     return-url: http://localhost:5173/my-ads
-    tmnCode: G1UUOAJ3
-    secret-key: P4XG20Q1FSTYCT6WS5P2MTWUQMK021OT
+    tmnCode: OZXJW3NQ
+    secret-key: PT82UHOPGWCY92V8IOW3IGZGDQJ3WWVQ
     version: 2.1.0
     command: pay
     orderType: Thanh toan don hang

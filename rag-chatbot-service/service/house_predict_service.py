@@ -2,12 +2,12 @@ import joblib
 import numpy as np
 import pandas as pd
 from pathlib import Path
-
 from crawler.crawler import normalize_furniture, normalize_legal_status
 from features.feature_engineering import build_features
 from features.geo import osm_geocode
+
 from utils.helper import get_project_root
-from config.setting import MODEL_DIR
+from config.setting import MODEL_DIR, CAT_FEATURES, NUM_FEATURES
 
 model = joblib.load(Path(get_project_root()) / MODEL_DIR / "lgbm.pkl")
 
@@ -28,9 +28,12 @@ class HouseService:
 
         df["property_feature"] = normalize_furniture(data["property_feature"])
         df["legal_status"] = normalize_legal_status(data["legal_status"])
+        df["furniture_state"] = normalize_furniture(data["furniture_state"])
 
         df = build_features(df, mode="predict")
-
+        print("===== PREDICT HOUSE =====")
+        print(df.to_string())
+        print("=====================")
         pred_log = model.predict(df)
         pred_price_per_m2 = np.expm1(pred_log)
 

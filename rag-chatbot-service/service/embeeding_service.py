@@ -306,6 +306,9 @@ async def feed_db(data):
             post, asset_detail, price, province, ward, land_area, post_type
         )
 
+        properties = _safe_value(asset_detail, "properties") or {}
+        legal_status = properties.get("legalDocs")
+        furniture_state = properties.get("interiorStatus")
         docs.append({
             "id": post["id"],
             "text": doc_text,
@@ -317,7 +320,12 @@ async def feed_db(data):
                 "price": float(price),
                 "province": province,
                 "ward": ward,
+                "legal_status": legal_status,
+                "furniture_state": furniture_state,
                 "land_area": float(land_area),
+                "bedrooms": int(_safe_value(properties, "bedrooms") or 0),
+                "bathrooms": int(_safe_value(properties, "bathrooms") or 0),
+                "floors": int(_safe_value(properties, "floors") or 0),
                 "source": DocType.POST,
                 "text": doc_text,
             },

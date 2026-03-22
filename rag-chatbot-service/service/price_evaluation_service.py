@@ -88,26 +88,30 @@ class PriceEvaluationService:
                 prediction_made = True
 
             # Step 3: Compare
+            diff_percent = 0.0
+            if not prediction_made:
+                status = "Chưa đủ thông tin để định giá"
+            elif actual_price and actual_price > 0:
+                actual_ty = actual_price / 1_000_000_000
+                diff = actual_ty - predicted_price_ty
+                diff_percent = (diff / predicted_price_ty) * 100 if predicted_price_ty > 0 else 0.0
+
+                if diff_percent < -10:
+                    status = "Rẻ (Dưới giá thị trường)"
+                elif diff_percent > 10:
+                    status = "Đắt (Trên giá thị trường)"
+                else:
+                    status = "Hợp lý (Sát giá thị trường)"
+            else:
+                status = "Đã dự đoán giá thành công"
+
             evaluation = {
                 "predicted_price_ty": predicted_price_ty,
                 "features": features,
                 "missing_fields": missing_fields,
-                "status": "Chưa đủ thông tin để định giá" if not prediction_made else "unknown",
-                "diff_percent": 0.0
+                "status": status,
+                "diff_percent": diff_percent
             }
-
-            if prediction_made and actual_price and actual_price > 0:
-                actual_ty = actual_price / 1_000_000_000
-                diff = actual_ty - predicted_price_ty
-                diff_percent = (diff / predicted_price_ty) * 100
-
-                evaluation["diff_percent"] = diff_percent
-                if diff_percent < -10:
-                    evaluation["status"] = "Rẻ (Dưới giá thị trường)"
-                elif diff_percent > 10:
-                    evaluation["status"] = "Đắt (Trên giá thị trường)"
-                else:
-                    evaluation["status"] = "Hợp lý (Sát giá thị trường)"
 
             return evaluation
 
