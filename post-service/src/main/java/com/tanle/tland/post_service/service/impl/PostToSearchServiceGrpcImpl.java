@@ -1,6 +1,7 @@
 package com.tanle.tland.post_service.service.impl;
 
 import com.tanle.tland.post_service.entity.Post;
+import com.tanle.tland.post_service.entity.PostStatus;
 import com.tanle.tland.post_service.mapper.PostMapper;
 import com.tanle.tland.post_service.repo.PostRepo;
 import com.tanle.tland.post_service.response.PostResponse;
@@ -49,7 +50,8 @@ public class PostToSearchServiceGrpcImpl extends PostToSearchServiceGrpc.PostToS
 
     @Override
     public void getAllPost(Empty request, StreamObserver<PostDetailResponseList> responseObserver) {
-        List<PostDetailResponse> postDetailResponses = postRepo.findAll().stream()
+        List<PostDetailResponse> postDetailResponses = postRepo.findAllByStatus(PostStatus.SHOW)
+                .stream()
                 .map(p -> {
                     AssetResponse assetResponse = assetToPostServiceBlockingStub.getAssetDetail(AssetRequest.newBuilder()
                             .setId(p.getAssetId())

@@ -86,6 +86,8 @@ public class UserServiceImpl implements UserService {
                 .createdAt(LocalDateTime.now())
                 .email(request.getEmail())
                 .isActive(true)
+                .lastAccess(LocalDateTime.now())
+                .phoneNumber(request.getPhoneNumber())
                 .sex(true)
                 .username(request.getUsername())
                 .build();

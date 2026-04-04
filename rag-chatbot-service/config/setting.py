@@ -35,16 +35,17 @@ NUM_FEATURES = [
 
     # KNN context
     "knn_price_mean",
+    "knn_price_median",
     "knn_price_std",
-    "neighbor_count",
     "neighbor_density",
 
-    # Interactions (rất mạnh)
+    # Interactions
     "area_zone_price",
     "area_x_bedrooms",
     "floor_x_area",
-    "floor_density"
-
+    "floor_density",
+    "bathroom_per_floor",
+    "area_per_floor",
 ]
 
 CAT_FEATURES = [

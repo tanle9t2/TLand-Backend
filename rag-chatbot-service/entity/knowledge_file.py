@@ -15,6 +15,7 @@ class DocType(str, enum.Enum):
     MARKET_ANALYSIS = "MARKET_ANALYSIS"
     GENERAL = "GENERAL"
     POST = "POST"
+    LEGAL = "LEGAL"
 
 
 class KnowledgeFile(Base):

@@ -120,4 +120,75 @@ class PriceEvaluationService:
             return {"error": str(e)}
 
 
+    def evaluate_from_metadata(self, metadata: dict) -> Dict[str, Any]:
+        """
+        Evaluate price directly from Pinecone structured metadata,
+        bypassing the costly LLM feature-extraction step.
+
+        Pinecone metadata field mapping:
+          area, floors, bedrooms, bathrooms, property_type,
+          property_feature, legal_status, furniture_state,
+          address, price (actual price in VND)
+        """
+        try:
+            # Map Pinecone metadata → model feature dict
+            features = {
+                "area":             metadata.get("area"),
+                "actual_price":     metadata.get("price"),
+                "floors":           metadata.get("floors"),
+                "bedrooms":         metadata.get("bedrooms"),
+                "bathrooms":        metadata.get("bathrooms"),
+                "property_type":    metadata.get("property_type"),
+                "property_feature": metadata.get("property_feature"),
+                "legal_status":     metadata.get("legal_status"),
+                "furniture_state":  metadata.get("furniture_state"),
+                "address":          metadata.get("address"),
+                "year":             metadata.get("year", 2026),
+            }
+
+            print(f"[PriceEval] evaluate_from_metadata features: {features}")
+
+            required_fields = NUM_FEATURES_REQUIRED
+            missing_fields = [f for f in required_fields if features.get(f) is None]
+
+            actual_price = features.get("actual_price")
+
+            predicted_price_ty = 0.0
+            prediction_made = False
+
+            if not missing_fields:
+                prediction = HouseService.predict(features)
+                predicted_price_ty = prediction["total_price_ty"]
+                prediction_made = True
+
+            diff_percent = 0.0
+            if not prediction_made:
+                status = "Chưa đủ thông tin để định giá"
+            elif actual_price and actual_price > 0:
+                actual_ty = actual_price / 1_000_000_000
+                diff = actual_ty - predicted_price_ty
+                diff_percent = (diff / predicted_price_ty) * 100 if predicted_price_ty > 0 else 0.0
+
+                if diff_percent < -10:
+                    status = "Rẻ (Dưới giá thị trường)"
+                elif diff_percent > 10:
+                    status = "Đắt (Trên giá thị trường)"
+                else:
+                    status = "Hợp lý (Sát giá thị trường)"
+            else:
+                status = "Đã dự đoán giá thành công"
+
+            return {
+                "predicted_price_ty": predicted_price_ty,
+                "features":           features,
+                "missing_fields":     missing_fields,
+                "status":             status,
+                "diff_percent":       diff_percent,
+            }
+
+        except Exception as e:
+            print(f"[PriceEvaluationService.from_metadata] Error: {e}")
+            return {"error": str(e)}
+
+
 price_evaluator = PriceEvaluationService()

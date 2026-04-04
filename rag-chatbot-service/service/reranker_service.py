@@ -47,9 +47,8 @@ def rerank_documents(query: str, documents: List[Dict[str, Any]], top_n: int = 1
 
     try:
         client = _get_client()
-        # Cần trích xuất list text riêng để gửi qua Cohere
         doc_texts = [doc.get("text", "") for doc in documents]
-        
+
         response = client.rerank(
             model=_RERANK_MODEL,
             query=query,

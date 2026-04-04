@@ -37,7 +37,7 @@ def hybrid_search(
     """
     # 1. Vector search — fetch candidate pool
     candidates = _vector_search(query, pinecone_filter, k=vector_top_k)
-
+    print(f"[DEBUG] Pinecone search: {len(candidates)}")
     if not candidates:
         return []
 

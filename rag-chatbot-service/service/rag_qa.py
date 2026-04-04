@@ -1,4 +1,6 @@
 import os
+import re
+from typing import List, Optional
 from dotenv import load_dotenv
 from langchain.schema import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -6,6 +8,9 @@ from langchain.chains import create_history_aware_retriever, create_retrieval_ch
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_openai import ChatOpenAI
 from langchain.schema import Document
+from langchain_core.messages import BaseMessage
+from langchain_openai import OpenAIEmbeddings
+from pinecone import Pinecone
 import json
 
 from entity.knowledge_file import DocType
@@ -13,9 +18,6 @@ from service.filter_builder import extract_filters
 from service.hybrid_search_service import hybrid_search
 from service.reranker_service import rerank_documents
 from service.price_evaluation_service import price_evaluator
-from typing import List
-from langchain_core.messages import BaseMessage
-from langchain_openai import OpenAIEmbeddings
 
 load_dotenv()
 
@@ -38,16 +40,51 @@ _CONSULTATION_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("consultation_prompt.
 _MARKET_ANALYSIS_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("market_analysis_prompt.txt")
 _BANK_LOAN_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("bank_loan_prompt.txt")
 _PROPERTY_DETAIL_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("property_detail_prompt.txt")
+_LEGAL_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("legal_prompt.txt")
 
 
-def _detect_intent(query: str, standalone_query: str, llm: ChatOpenAI) -> str:
+
+# Regex patterns that indicate the user is referencing a previously listed property
+_PROPERTY_REF_PATTERN = re.compile(
+    r"(c[aă]n\s*(s[oố]|th[uứ])?\s*\d+"           # "căn 1", "căn số 2", "căn thứ 3"
+    r"|c[aă]n\s*(đầu\s*tiên|nh[aâ]́t|đ[oó]|n[aà]y|tr[eê]́n)"  # "căn đầu tiên", "căn đó", "căn này"
+    r"|đ[aá]nh\s*gi[aá]\s*c[aă]n"                 # "đánh giá căn"
+    r"|chi\s*ti[eế]t\s*c[aă]n"                    # "chi tiết căn"
+    r"|xem\s*(th[eê]m|c[aă]n|n[hờ][aà])\s*(đ[oó]|n[aà]y|\d+)"  # "xem thêm căn đó"
+    r")",
+    re.IGNORECASE | re.UNICODE,
+)
+
+
+def _detect_intent(query: str, standalone_query: str, llm: ChatOpenAI, chat_history=None) -> str:
+    # --- Rule-based pre-check (no LLM call needed) ---
+    # If the original query references a specific listed property AND history has properties,
+    # immediately classify as PROPERTY_DETAIL to avoid the standalone_query misleading the LLM.
+    if _PROPERTY_REF_PATTERN.search(query):
+        has_properties_in_history = False
+        if chat_history:
+            for msg in reversed(chat_history):
+                if isinstance(msg, dict):
+                    ai_data = msg.get("ai", {})
+                    if isinstance(ai_data, dict) and ai_data.get("properties"):
+                        has_properties_in_history = True
+                        break
+        if has_properties_in_history:
+            print(f"[DEBUG] Rule-based pre-check: PROPERTY_DETAIL (ordinal ref in query + history has properties)")
+            return "PROPERTY_DETAIL"
+
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "Phân loại yêu cầu của người dùng vào 1 trong 4 loại:\n"
-                   "'MARKET_ANALYSIS': hỏi đắt rẻ, so sánh giá, nhận định thị trường BĐS.\n"
-                   "'BANK_LOAN': hỏi về vay vốn ngân hàng, thiếu tiền, lãi suất.\n"
-                   "'PROPERTY_DETAIL': muốn xem chi tiết về 1 căn cụ thể đã được đề cập (VD: 'chi tiết căn 1', 'cho tui xem thêm căn đó', 'căn thứ 2 thế nào').\n"
-                   "'CONSULTATION': tìm nhà, hỏi thông tin chung, tìm kiếm BĐS.\n"
-                   "Chỉ trả về đúng 1 từ khóa duy nhất."),
+        ("system",
+         "Phân loại yêu cầu của người dùng vào 1 trong 6 loại:\n"
+         "'MARKET_ANALYSIS': hỏi đắt rẻ, so sánh giá, nhận định thị trường BĐS.\n"
+         "'BANK_LOAN': hỏi về vay vốn ngân hàng, thiếu tiền, lãi suất.\n"
+         "'PROPERTY_DETAIL': muốn xem chi tiết về 1 căn cụ thể đã được đề cập (VD: 'chi tiết căn 1', 'cho tui xem thêm căn đó', 'căn thứ 2 thế nào').\n"
+         "'LEGAL': hỏi về pháp lý đất đai, luật nhà ở, thủ tục mua bán, sổ đỏ/sổ hồng, tranh chấp đất, thuế phí giao dịch BĐS, quy hoạch, hợp đồng, công chứng, quyền sử dụng đất. "
+         "VD: 'sổ đỏ là gì', 'thủ tục sang tên', 'đặt cọc có rủi ro không', 'đất chưa có sổ mua được không'.\n"
+         "'UNCLEAR': câu hỏi quá mơ hồ, thiếu thông tin tối thiểu để tìm kiếm BĐS hiệu quả — KHÔNG có khu vực/quận, KHÔNG có khoảng giá, KHÔNG có loại hình cụ thể. "
+         "VD: 'tôi cần mua nhà', 'tìm nhà giúp tôi', 'có nhà không', 'cần thuê chỗ ở'.\n"
+         "'CONSULTATION': tìm nhà/căn hộ/đất với ít nhất 1 tiêu chí cụ thể (khu vực, giá, loại hình, diện tích...).\n"
+         "Chỉ trả về đúng 1 từ khóa duy nhất."),
         ("human", "Câu hỏi gốc: {query}\nCâu diễn giải có ngữ cảnh: {standalone_query}")
     ])
     chain = prompt | llm
@@ -60,7 +97,75 @@ def _detect_intent(query: str, standalone_query: str, llm: ChatOpenAI) -> str:
         return "BANK_LOAN"
     if "PROPERTY_DETAIL" in intent:
         return "PROPERTY_DETAIL"
+    if "LEGAL" in intent:
+        return "LEGAL"
+    if "UNCLEAR" in intent:
+        return "UNCLEAR"
     return "CONSULTATION"
+
+
+
+def _resolve_property_from_history(chat_history: list, query: str) -> Optional[str]:
+    """
+    Extract propertyId from the last AI properties list based on
+    ordinal reference in query (e.g. 'căn 1', 'căn số 2', 'căn thứ nhất').
+    """
+    if not chat_history:
+        return None
+
+    properties = []
+    for msg in reversed(chat_history):
+        if isinstance(msg, dict):
+            ai_data = msg.get("ai", {})
+            if isinstance(ai_data, dict):
+                props = ai_data.get("properties", [])
+                if props:
+                    properties = props
+                    break
+
+    if not properties:
+        return None
+
+    q = query.lower()
+
+    # Numeric ordinal: "căn 1", "căn số 1", "căn thứ 1", "căn đầu tiên"
+    match = re.search(r"c[aă]n\s*(?:s[oố]|th[uứ])?\s*(\d+)", q)
+    if match:
+        idx = int(match.group(1)) - 1
+        if 0 <= idx < len(properties):
+            return properties[idx].get("propertyId")
+
+    # Word ordinals
+    ordinal_map = {"đầu tiên": 0, "nhất": 0, "hai": 1, "ba": 2, "bốn": 3, "năm": 4}
+    for word, idx in ordinal_map.items():
+        if word in q and 0 <= idx < len(properties):
+            return properties[idx].get("propertyId")
+
+    # Fallback: reference to single item in list
+    if len(properties) == 1:
+        return properties[0].get("propertyId")
+
+    return None
+
+
+def _fetch_pinecone_entry_by_id(property_id: str) -> Optional[dict]:
+    """
+    Fetch full vector entry from Pinecone by ID.
+    Returns {"text": str, "metadata": dict} or None if not found.
+    """
+    try:
+        pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+        index = pc.Index(os.getenv("PINECONE_INDEX_NAME"))
+        response = index.fetch(ids=[property_id])
+        vectors = response.vectors
+        if property_id in vectors:
+            metadata = vectors[property_id].metadata or {}
+            text = metadata.get("text") or metadata.get("content", "")
+            return {"text": text, "metadata": metadata}
+        return None
+    except Exception as e:
+        print(f"[DEBUG] _fetch_pinecone_entry_by_id error: {e}")
+        return None
 
 
 def ask_question(query: str, chat_history=None, k: int = 5):
@@ -117,15 +222,34 @@ def ask_question(query: str, chat_history=None, k: int = 5):
     else:
         standalone_query = query
 
-    intent = _detect_intent(query, standalone_query, llm)
+    intent = _detect_intent(query, standalone_query, llm, chat_history)
     print(f"[DEBUG] query: {query}")
     print(f"[DEBUG] standalone_query: {standalone_query}")
     print(f"[DEBUG] Detected intent: {intent}")
+
+    # --- Early exit for vague queries: skip entire search pipeline ---
+    if intent == "UNCLEAR":
+        print("[DEBUG] Intent=UNCLEAR — skipping search pipeline, returning clarifying question")
+        return {
+            "answer": {
+                "message": (
+                    "Bạn có thể cho tôi biết thêm một số thông tin để tìm kiếm chính xác hơn không? 😊\n\n"
+                    "Cụ thể:\n"
+                    "- **Khu vực mong muốn**: quận/huyện hoặc đường cụ thể?\n"
+                    "- **Ngân sách**: khoảng bao nhiêu tỷ hoặc triệu?\n"
+                    "- **Loại hình**: nhà phố, căn hộ, đất nền, hay nhà trọ?\n"
+                    "- **Mục đích**: để ở, đầu tư, hay cho thuê lại?"
+                ),
+                "properties": []
+            },
+            "context": [],
+        }
 
     intent_config = {
         "MARKET_ANALYSIS": (_MARKET_ANALYSIS_PROMPT, DocType.MARKET_ANALYSIS),
         "BANK_LOAN": (_BANK_LOAN_PROMPT, DocType.BANK_LOAN),
         "PROPERTY_DETAIL": (_PROPERTY_DETAIL_PROMPT, DocType.POST),
+        "LEGAL": (_LEGAL_PROMPT, DocType.LEGAL),
     }
 
     selected_prompt, source = intent_config.get(
@@ -138,38 +262,73 @@ def ask_question(query: str, chat_history=None, k: int = 5):
 
     print(f"[DEBUG] Pinecone filter: {pinecone_filter}")
 
-    raw_results = hybrid_search(
-        query=standalone_query,
-        pinecone_filter=pinecone_filter,
-        vector_top_k=20,
-        final_top_k=10,
-    )
-    print(f"[DEBUG] Raw results count: {len(raw_results)}")
+    # --- PROPERTY_DETAIL fast-path: resolve ID from history, fetch directly, skip hybrid search ---
+    resolved_property_entry: Optional[dict] = None
+    if intent == "PROPERTY_DETAIL":
+        resolved_id = _resolve_property_from_history(chat_history or [], query)
+        print(f"[DEBUG] PROPERTY_DETAIL: chat_history = {chat_history}")
+        if resolved_id:
+            print(f"[DEBUG] PROPERTY_DETAIL: resolved_id = {resolved_id}")
+            resolved_property_entry = _fetch_pinecone_entry_by_id(resolved_id)
+            if resolved_property_entry:
+                print(f"[DEBUG] PROPERTY_DETAIL: fetched from Pinecone by ID, skipping hybrid search")
 
-    reranked_docs = rerank_documents(query=standalone_query, documents=raw_results, top_n=k)
-    print(f"[DEBUG] Reranked docs count: {len(reranked_docs)}")
+    # --- Normal hybrid search (skipped for PROPERTY_DETAIL when ID is resolved) ---
+    if resolved_property_entry is None:
+        raw_results = hybrid_search(
+            query=standalone_query,
+            pinecone_filter=pinecone_filter,
+            vector_top_k=20,
+            final_top_k=10,
+        )
+        print(f"[DEBUG] Raw results count: {len(raw_results)}")
+        reranked_docs = rerank_documents(query=standalone_query, documents=raw_results, top_n=k)
+        print(f"[DEBUG] Reranked docs count: {len(reranked_docs)}")
+    else:
+        reranked_docs = []
+        print(f"[DEBUG] Hybrid search SKIPPED — using direct Pinecone fetch")
 
     docs = []
     enriched_texts = []
 
-    for i, item in enumerate(reranked_docs, 1):
-        text = item.get("text", "")
-        metadata = item.get("metadata", {})
-
-        # User explicitly specified: id is taken from post's metadata
-        post_id = metadata.get("id", "UNKNOWN")
-
-        page_content = f"[Mã BĐS: {post_id}]\n{text}"
-        print(f"\n===== Document {i} =====")
-        print(page_content.strip()[:200])
-
+    # If PROPERTY_DETAIL was resolved by ID, inject the fetched entry directly
+    if resolved_property_entry is not None:
+        entry_metadata = resolved_property_entry["metadata"]
+        entry_text = resolved_property_entry["text"]
+        post_id = entry_metadata.get("id", resolved_id)
+        page_content = f"[Mã BĐS: {post_id}]\n{entry_text}"
         docs.append(Document(page_content=page_content))
         enriched_texts.append({
             "id": post_id,
-            "text": text,
-            "metadata": metadata,
-            "rrf_score": item.get("rrf_score", 0.0)
+            "text": entry_text,
+            "metadata": entry_metadata,
+            "rrf_score": 1.0,  # synthetic score — direct fetch
         })
+        print(f"[DEBUG] Injected direct-fetch doc for propertyId={post_id}")
+    else:
+        BANK_LOAN_RRF_THRESHOLD = 0.01
+        for i, item in enumerate(reranked_docs, 1):
+            text = item.get("text", "")
+            metadata = item.get("metadata", {})
+            rrf_score = item.get("rrf_score", 0.0)
+
+            if intent == "BANK_LOAN" and rrf_score < BANK_LOAN_RRF_THRESHOLD:
+                print(f"[DEBUG] BANK_LOAN doc {i}: score={rrf_score:.4f} — SKIPPED (below threshold)")
+                continue
+
+            post_id = metadata.get("id", "UNKNOWN")
+            page_content = f"[Mã BĐS: {post_id}]\n{text}"
+            print(f"\n===== Document {i} =====")
+            print(f"[DEBUG] score={rrf_score:.4f}")
+            print(page_content.strip()[:200])
+
+            docs.append(Document(page_content=page_content))
+            enriched_texts.append({
+                "id": post_id,
+                "text": text,
+                "metadata": metadata,
+                "rrf_score": rrf_score
+            })
 
     print(f"[DEBUG] Docs passed to LLM: {len(docs)}")
 
@@ -180,6 +339,24 @@ def ask_question(query: str, chat_history=None, k: int = 5):
                     "Không có dữ liệu tham khảo từ thị trường. "
                     "Hãy dựa hoàn toàn vào [KẾT QUẢ ĐÁNH GIÁ TỪ MÔ HÌNH DỰ BÁO] để phân tích. "
                     "Nếu mô hình thiếu thông tin, hãy hỏi người dùng bổ sung các trường còn thiếu."
+                )
+            ))
+        elif intent == "BANK_LOAN":
+            docs.append(Document(
+                page_content=(
+                    "⚠️ KHÔNG CÓ DỮ LIỆU GÓI VAY — Hệ thống hiện chưa có tài liệu về các sản phẩm vay ngân hàng.\n"
+                    "TUYỆT ĐỐI KHÔNG tự sáng tác hoặc bịa ra bất kỳ thông tin gói vay nào.\n"
+                    "Hãy thông báo lịch sự cho khách rằng hệ thống chưa cập nhật dữ liệu gói vay,\n"
+                    "và gợi ý khách liên hệ trực tiếp với ngân hàng hoặc chuyên viên tài chính để được tư vấn chính xác."
+                )
+            ))
+        elif intent == "LEGAL":
+            docs.append(Document(
+                page_content=(
+                    "⚠️ KHÔNG CÓ DỮ LIỆU PHÁP LÝ — Hệ thống hiện chưa có tài liệu pháp luật liên quan đến câu hỏi này.\n"
+                    "TUYỆT ĐỐI KHÔNG tự bịa ra điều luật, điều khoản, hoặc văn bản pháp quy nào.\n"
+                    "Hãy thông báo lịch sự cho khách rằng hệ thống chưa có dữ liệu pháp lý về vấn đề này,\n"
+                    "và gợi ý khách liên hệ luật sư, văn phòng công chứng, hoặc tra cứu tại vbpl.vn để được tư vấn chính xác."
                 )
             ))
         else:
@@ -197,7 +374,17 @@ def ask_question(query: str, chat_history=None, k: int = 5):
         print("[DEBUG] No docs found — injected empty-context marker")
 
     if intent == "MARKET_ANALYSIS":
-        query_eval = price_evaluator.evaluate(standalone_query)
+        # If user references a property from chat history, fetch its full metadata
+        eval_text = standalone_query
+        resolved_id = _resolve_property_from_history(chat_history or [], query)
+        if resolved_id:
+            print(f"[DEBUG] MARKET_ANALYSIS: resolved propertyId={resolved_id}")
+            pinecone_entry = _fetch_pinecone_entry_by_id(resolved_id)
+            if pinecone_entry:
+                eval_text = pinecone_entry["metadata"]
+                print(f"[DEBUG] Using Pinecone stored text for price evaluation")
+
+        query_eval = price_evaluator.evaluate(eval_text)
 
         if query_eval.get("status") != "unknown":
             missing = query_eval.get("missing_fields", [])
@@ -215,8 +402,15 @@ def ask_question(query: str, chat_history=None, k: int = 5):
             print("Predict", adhoc_doc_content)
 
     elif intent == "PROPERTY_DETAIL" and docs:
-        top_doc_text = docs[0].page_content
-        prop_eval = price_evaluator.evaluate(top_doc_text)
+        # Prefer structured Pinecone metadata for accuracy — skip LLM extraction
+        top_metadata = enriched_texts[0]["metadata"] if enriched_texts else {}
+        print(f"[DEBUG] PROPERTY_DETAIL metadata: {top_metadata}")
+
+        if top_metadata:
+            prop_eval = price_evaluator.evaluate_from_metadata(top_metadata)
+        else:
+            # Fallback: parse from text (less accurate)
+            prop_eval = price_evaluator.evaluate(docs[0].page_content)
 
         missing = prop_eval.get("missing_fields", [])
         missing_str = ", ".join(missing) if missing else "Không"
@@ -235,7 +429,14 @@ def ask_question(query: str, chat_history=None, k: int = 5):
         print(f"[DEBUG] Property detail eval: {eval_doc_content}")
 
     # 6. Format context into a single string for the prompt
-    context_str = "\n\n".join([doc.page_content for doc in docs])
+    # Apply sentinel markers so the LLM can clearly distinguish data presence
+    raw_context = "\n\n".join([doc.page_content for doc in docs])
+    has_real_data = bool(enriched_texts)  # True only when retrieval returned actual results
+
+    if intent == "CONSULTATION" and has_real_data:
+        context_str = f"✅ CÓ DỮ LIỆU — Hệ thống tìm được {len(enriched_texts)} BĐS. BẮT BUỘC giới thiệu ít nhất 1 căn.\n\n{raw_context}"
+    else:
+        context_str = raw_context
 
     qa_prompt = ChatPromptTemplate.from_messages([
         ("system", selected_prompt),
@@ -243,7 +444,7 @@ def ask_question(query: str, chat_history=None, k: int = 5):
         ("human", "Lịch sử ngữ cảnh:\n{context}\n\nCâu hỏi: {input}")
     ])
 
-    if intent in ("BANK_LOAN", "MARKET_ANALYSIS"):
+    if intent in ("BANK_LOAN", "MARKET_ANALYSIS", "LEGAL"):
         chain = qa_prompt | llm.bind(response_format={"type": "json_object"})
     else:
         chain = qa_prompt | llm

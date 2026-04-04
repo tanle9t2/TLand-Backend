@@ -1,5 +1,5 @@
 import grpc
-from generated import post_pb2_grpc, post_pb2
+from proto  import post_pb2_grpc, post_pb2
 from google.protobuf.json_format import MessageToDict, MessageToJson
 import asyncio
 from service.embeeding_service import index_to_pinecone, feed_db
