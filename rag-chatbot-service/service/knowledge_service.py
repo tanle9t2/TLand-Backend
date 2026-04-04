@@ -3,16 +3,17 @@ import math
 from sqlalchemy import desc, asc
 from sqlalchemy.orm import Session
 from entity.knowledge_file import KnowledgeFile, FileStatus, DocType
-from service.s3_service import upload_file_to_s3
-from fastapi import File
+from service.s3_service import upload_content_to_s3
+from service.embeeding_service import delete_from_pinecone
+from fastapi import UploadFile
 
 
 class KnowledgeService:
 
     @staticmethod
-    def create_file(db: Session, file: File(...), filename: str, total_chunks: int = 0,
+    def create_file(db: Session, file_content: bytes, filename: str, total_chunks: int = 0,
                     doc_type: DocType = DocType.GENERAL):
-        file_url = upload_file_to_s3(file)
+        file_url = upload_content_to_s3(file_content, filename)
 
         new_file = KnowledgeFile(
             file_url=file_url,
@@ -104,6 +105,7 @@ class KnowledgeService:
             return False
 
         file.status = FileStatus.DELETED
+        delete_from_pinecone(file_id)
         db.commit()
 
         return True

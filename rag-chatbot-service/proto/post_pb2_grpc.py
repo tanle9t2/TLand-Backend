@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import post_pb2 as post__pb2
+from proto import post_pb2 as proto_dot_post__pb2
 
 GRPC_GENERATED_VERSION = '1.78.0'
 GRPC_VERSION = grpc.__version__
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + ' but the generated code in post_pb2_grpc.py depends on'
+        + ' but the generated code in proto/post_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -36,13 +36,13 @@ class PostToSearchServiceStub(object):
         """
         self.getAllPost = channel.unary_unary(
                 '/PostToSearchService/getAllPost',
-                request_serializer=post__pb2.Empty.SerializeToString,
-                response_deserializer=post__pb2.PostDetailResponseList.FromString,
+                request_serializer=proto_dot_post__pb2.Empty.SerializeToString,
+                response_deserializer=proto_dot_post__pb2.PostDetailResponseList.FromString,
                 _registered_method=True)
         self.getPostById = channel.unary_unary(
                 '/PostToSearchService/getPostById',
-                request_serializer=post__pb2.PostDetailRequest.SerializeToString,
-                response_deserializer=post__pb2.PostDetailResponse.FromString,
+                request_serializer=proto_dot_post__pb2.PostDetailRequest.SerializeToString,
+                response_deserializer=proto_dot_post__pb2.PostDetailResponse.FromString,
                 _registered_method=True)
 
 
@@ -66,13 +66,13 @@ def add_PostToSearchServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'getAllPost': grpc.unary_unary_rpc_method_handler(
                     servicer.getAllPost,
-                    request_deserializer=post__pb2.Empty.FromString,
-                    response_serializer=post__pb2.PostDetailResponseList.SerializeToString,
+                    request_deserializer=proto_dot_post__pb2.Empty.FromString,
+                    response_serializer=proto_dot_post__pb2.PostDetailResponseList.SerializeToString,
             ),
             'getPostById': grpc.unary_unary_rpc_method_handler(
                     servicer.getPostById,
-                    request_deserializer=post__pb2.PostDetailRequest.FromString,
-                    response_serializer=post__pb2.PostDetailResponse.SerializeToString,
+                    request_deserializer=proto_dot_post__pb2.PostDetailRequest.FromString,
+                    response_serializer=proto_dot_post__pb2.PostDetailResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -100,8 +100,8 @@ class PostToSearchService(object):
             request,
             target,
             '/PostToSearchService/getAllPost',
-            post__pb2.Empty.SerializeToString,
-            post__pb2.PostDetailResponseList.FromString,
+            proto_dot_post__pb2.Empty.SerializeToString,
+            proto_dot_post__pb2.PostDetailResponseList.FromString,
             options,
             channel_credentials,
             insecure,
@@ -127,8 +127,8 @@ class PostToSearchService(object):
             request,
             target,
             '/PostToSearchService/getPostById',
-            post__pb2.PostDetailRequest.SerializeToString,
-            post__pb2.PostDetailResponse.FromString,
+            proto_dot_post__pb2.PostDetailRequest.SerializeToString,
+            proto_dot_post__pb2.PostDetailResponse.FromString,
             options,
             channel_credentials,
             insecure,

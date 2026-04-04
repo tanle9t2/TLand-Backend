@@ -28,14 +28,14 @@ TABLE_ROW_PATTERN = re.compile(r"^\|.*\|$", re.MULTILINE)
 TABLE_SEPARATOR_PATTERN = re.compile(r"^\|[\s\-:|]+\|$", re.MULTILINE)
 
 
-async def markdown_chunking(file, doc_type):
-    markdown_text = await parse_markdown(file)
-    docs = _process_markdown(markdown_text, file.filename, doc_type)
+async def markdown_chunking(file_content, filename, doc_type, file_id=None):
+    markdown_text = await parse_markdown(file_content, filename)
+    docs = process_markdown(markdown_text, filename, doc_type, file_id)
     await index_to_pinecone(docs)
     return len(docs)
 
 
-def _process_markdown(markdown_text: str, filename: str, doc_type: DocType) -> list[dict]:
+def process_markdown(markdown_text: str, filename: str, doc_type: DocType, file_id=None) -> list[dict]:
     headers_to_split_on = [
         ("#", "Header 1"),
         ("##", "Header 2"),
@@ -68,10 +68,18 @@ def _process_markdown(markdown_text: str, filename: str, doc_type: DocType) -> l
             if header_context:
                 contextualized_chunk = f"[{filename} | {header_context}]\n{chunk}"
 
+            chunk_id = f"f_{file_id}_{i}_{uuid.uuid4().hex[:8]}"
+            print(
+                f"[CHUNK] file={filename} | section={header_context} | "
+                f"index={i} | length={len(contextualized_chunk)} | id={chunk_id}"
+            )
+
             docs.append({
-                "id": str(uuid.uuid4()),
+                "id": chunk_id,
                 "text": contextualized_chunk,
                 "metadata": {
+                    "id": chunk_id,
+                    "knowledge_file_id": file_id,
                     "filename": filename,
                     "section": header_context,
                     "chunk_index": i,
@@ -298,7 +306,9 @@ async def feed_db(data):
         asset_detail = post["assetDetail"]
         price = post.get("price") or 0
         province = asset_detail.get("province", "")
+        address = asset_detail.get("address", "")
         ward = asset_detail.get("ward", "")
+        other_info = ", ".join(asset_detail.get("otherInfo", []))
         land_area = asset_detail.get("landArea") or 0
         post_type = "THUE" if str(post.get("type", "")).upper() in ("THUE", "RENT") else "BAN"
 
@@ -309,29 +319,48 @@ async def feed_db(data):
         properties = _safe_value(asset_detail, "properties") or {}
         legal_status = properties.get("legalDocs")
         furniture_state = properties.get("interiorStatus")
+        raw_metadata = {
+            "id": post["id"],
+            "post_type": post_type,
+            "title": post.get("title", ""),
+            "asset_detail_id": asset_detail.get("id", "") if asset_detail else "",
+            "price": float(price) if price else 0,
+            "address": f"{address}, {ward}, {province}",
+            "province": province,
+            "ward": ward,
+            "property_type": properties.get("houseType"),
+            "property_feature": other_info,
+            "legal_status": legal_status,
+            "furniture_state": furniture_state,
+            "area": float(land_area) if land_area else 0,
+            "bedrooms": int(_safe_value(properties, "bedrooms") or 0),
+            "bathrooms": int(_safe_value(properties, "bathrooms") or 0),
+            "floors": int(_safe_value(properties, "floors") or 0),
+            "source": DocType.POST,
+            "text": doc_text,
+        }
+
         docs.append({
             "id": post["id"],
             "text": doc_text,
-            "metadata": {
-                "id": post["id"],
-                "post_type": post_type,
-                "title": post.get("title", ""),
-                "asset_detail_id": asset_detail.get("id", ""),
-                "price": float(price),
-                "province": province,
-                "ward": ward,
-                "legal_status": legal_status,
-                "furniture_state": furniture_state,
-                "land_area": float(land_area),
-                "bedrooms": int(_safe_value(properties, "bedrooms") or 0),
-                "bathrooms": int(_safe_value(properties, "bathrooms") or 0),
-                "floors": int(_safe_value(properties, "floors") or 0),
-                "source": DocType.POST,
-                "text": doc_text,
-            },
+            "metadata": clean_metadata(raw_metadata),
         })
 
     await index_to_pinecone(docs)
+
+
+def clean_metadata(metadata: dict):
+    cleaned = {}
+    for k, v in metadata.items():
+        if v is None:
+            continue
+        if isinstance(v, (str, int, float, bool)):
+            cleaned[k] = v
+        elif isinstance(v, list):
+            cleaned[k] = [str(x) for x in v]
+        else:
+            cleaned[k] = str(v)
+    return cleaned
 
 
 async def index_to_pinecone(docs):
@@ -364,17 +393,73 @@ async def index_to_pinecone(docs):
         index.upsert(vectors=upsert_payload[i: i + batch_size])
 
 
-if __name__ == "__main__":
+def delete_from_pinecone(file_id: int):
     pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+    index_name = os.getenv("PINECONE_INDEX_NAME")
+    index = pc.Index(index_name)
 
-    index = pc.Index(os.getenv("PINECONE_INDEX_NAME"))
-    query_response = index.query(
-        vector=[0.0] * 1536,
-        top_k=10,
+    index.delete(
         filter={
-            "title": {"$eq": "🏠 Phòng trọ cao cấp dạng Studio Full NT - Trung tâm Q. Bình Thạnh"}
-        },
-        include_metadata=True
+            "knowledge_file_id": {"$eq": int(file_id)}
+        }
     )
 
-    print(query_response)
+
+def update_source_market_to_legal():
+    pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+    index = pc.Index(os.getenv("PINECONE_INDEX_NAME"))
+
+    query_response = index.query(
+        vector=[0.0] * 1536,
+        top_k=10000,
+        include_metadata=True,
+        include_values=True,
+        filter={"source": {"$eq": "MARKET_ANALYSIS"}}
+    )
+
+    matches = query_response.get("matches", [])
+    print(f"Found {len(matches)} records")
+
+    batch_size = 100  # 👉 có thể chỉnh 50–200 tùy size vector
+    batch = []
+    total = 0
+
+    for match in matches:
+        metadata = match.get("metadata", {})
+        values = match.get("values", [])
+        vector_id = match.get("id")
+
+        metadata["source"] = "LEGAL"
+
+        batch.append({
+            "id": vector_id,
+            "values": values,
+            "metadata": metadata
+        })
+
+        # 👉 Khi đủ batch thì upsert
+        if len(batch) >= batch_size:
+            index.upsert(vectors=batch)
+            print(f"Upserted batch of {len(batch)}")
+            total += len(batch)
+            batch = []
+
+    # 👉 Upsert phần còn lại
+    if batch:
+        index.upsert(vectors=batch)
+        print(f"Upserted final batch of {len(batch)}")
+        total += len(batch)
+
+    print(f"Done! Updated {total} records")
+
+
+def delete_post_from_pinecone():
+    pc = Pinecone(api_key=os.getenv("PINECONE_API_KEY"))
+    index_name = os.getenv("PINECONE_INDEX_NAME")
+    index = pc.Index(index_name)
+
+    index.delete(
+        filter={
+            "source": {"$eq": "POST"}
+        }
+    )

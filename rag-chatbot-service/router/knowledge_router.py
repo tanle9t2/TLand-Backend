@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from database import get_db
 from response.knowledge_response import KnowledgeResponse
 from response.paginated_knowledge_response import PaginatedKnowledgeResponse
+from service.embeeding_service import update_source_market_to_legal
 from service.knowledge_service import KnowledgeService
 
 router = APIRouter(prefix="/api/v1/knowledge", tags=["Knowledge"])

@@ -91,7 +91,7 @@ public class AssetGrpcServiceImpl extends AssetToPostServiceGrpc.AssetToPostServ
 
         Asset asset = optionalAsset.get();
         AssetResponse response = assetMapper.convertToResponseGrpc(asset);
-
+        System.out.println(asset);
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();
