@@ -9,12 +9,12 @@ import org.springframework.cloud.config.server.EnableConfigServer;
 @EnableConfigServer
 public class ConfigServerApplication {
     public static void main(String[] args) {
-        Dotenv dotenv = Dotenv.configure()
-                .directory("config-server")
-                .load();
-        dotenv.entries().forEach(entry ->
-            System.setProperty(entry.getKey(), entry.getValue())
-        );
+//        Dotenv dotenv = Dotenv.configure()
+//                .directory("config-server")
+//                .load();
+//        dotenv.entries().forEach(entry ->
+//            System.setProperty(entry.getKey(), entry.getValue())
+//        );
         SpringApplication.run(ConfigServerApplication.class, args);
     }
 

@@ -11,15 +11,15 @@ grpc:
 
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/tland_paymentdb
-    username: root
-    password: 090224@Tan
+    url: ${PAYMENT_DB_URL}
+    username: ${PAYMENT_DB_USERNAME}
+    password: ${PAYMENT_DB_PASSWORD}
   jpa:
     properties:
       hibernate:
         format_sql: true
   kafka:
-    bootstrap-servers: 127.0.0.1:29091
+    bootstrap-servers: ${KAFKA_SERVER}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -37,11 +37,16 @@ spring:
 
 payment:
   vnPay:
-    return-url: http://localhost:5173/my-ads
-    tmnCode: OZXJW3NQ
-    secret-key: PT82UHOPGWCY92V8IOW3IGZGDQJ3WWVQ
-    version: 2.1.0
-    command: pay
-    orderType: Thanh toan don hang
-    init-payment-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-    timeout: 15
+    return-url: ${RETURN_URL}
+    tmnCode: ${TMN_CODE}
+    secret-key: ${SECRET_KEY}
+    version: ${VNPAY_VERSION}
+    command: ${COMMAND}
+    orderType: ${ORDER_TYPE}
+    init-payment-url: ${INIT_PAYMENT_URL}
+    timeout: ${TIME_OUT}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/

@@ -420,7 +420,7 @@ def update_source_market_to_legal():
     matches = query_response.get("matches", [])
     print(f"Found {len(matches)} records")
 
-    batch_size = 100  # 👉 có thể chỉnh 50–200 tùy size vector
+    batch_size = 100
     batch = []
     total = 0
 
@@ -437,14 +437,14 @@ def update_source_market_to_legal():
             "metadata": metadata
         })
 
-        # 👉 Khi đủ batch thì upsert
+        
         if len(batch) >= batch_size:
             index.upsert(vectors=batch)
             print(f"Upserted batch of {len(batch)}")
             total += len(batch)
             batch = []
 
-    # 👉 Upsert phần còn lại
+  
     if batch:
         index.upsert(vectors=batch)
         print(f"Upserted final batch of {len(batch)}")

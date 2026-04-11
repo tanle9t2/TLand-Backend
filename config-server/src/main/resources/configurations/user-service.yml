@@ -29,9 +29,14 @@ grpc:
     enable-reflection: true
 
 keycloak:
-  auth-server-url: http://localhost:8443
-  realm: TLand
+  auth-server-url: ${KEYCLOAK_BASE_URL}
+  realm: ${KEYCLOAK_REALM}
   admin:
-    client-id: admin-cli
-    username: admin
-    password: admin
+    client-id: ${KEYCLOAK_REALM_ID}
+    username: ${KEYCLOAK_REALM_USERNAME}
+    password: ${KEYCLOAK_REALM_PASSWORD}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/

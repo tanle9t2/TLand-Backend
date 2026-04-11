@@ -2,12 +2,10 @@ import os
 import re
 from typing import List, Optional
 from dotenv import load_dotenv
-from langchain.schema import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.chains import create_history_aware_retriever, create_retrieval_chain
-from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain_openai import ChatOpenAI
-from langchain.schema import Document
+from langchain_core.documents import Document
 from langchain_core.messages import BaseMessage
 from langchain_openai import OpenAIEmbeddings
 from pinecone import Pinecone
