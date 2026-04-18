@@ -1,53 +1,49 @@
 import os
 
+import pandas as pd
+import requests
+import time
 
 from dotenv import load_dotenv
 
-
-from sqlalchemy import create_engine, text
-
-# Load environment variables
 load_dotenv()
+API_KEY = os.getenv("GOONG_API_KEY")
 
 
-def fetch_mysql_data():
-    engine = create_engine(os.getenv("MYSQL_URI"))
-    with engine.connect() as conn:
-        query = text("""
-            SELECT 
-                CONCAT(u.first_name,' ', u.last_name) AS teacher_name,
-                c.id AS course_id,
-                c.name AS course_name,
-                c.description,
-                cat.name AS category,
-                c.price as course_price,
-                s.id AS section_id,
-                s.name AS section_name,
-                ct.id AS content_id,
-                ct.name AS content_name
-            FROM course c
-            LEFT JOIN user u ON u.id = c.teacher_id
-            LEFT JOIN category cat ON c.category_id = cat.id
-            LEFT JOIN section s ON s.course_id = c.id
-            LEFT JOIN content ct ON ct.section_id = s.id
-            WHERE c.description IS NOT NULL AND c.description != ''
-        """)
-        result = conn.execute(query)
-        return [
-            {
-                "course": row.course_name,
-                "section": row.section_name,
-                "content_name": row.content_name,
-                "teacher": row.teacher_name,
-                "category": row.category,
-                "description": row.description,
-                "price": int(row.course_price),
-            }
-            for row in result.fetchall()
-        ]
+def geocode_goong(address):
+    url = "https://rsapi.goong.io/geocode"
+    params = {
+        "address": address,
+        "api_key": API_KEY
+    }
+
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        data = response.json()
+
+        if data.get("results"):
+            location = data["results"][0]["geometry"]["location"]
+            return location["lat"], location["lng"]
+        else:
+            return None, None
+
+    except Exception as e:
+        print("Error:", e)
+        return None, None
 
 
+df = pd.read_csv("D:\\code\\DA\\TLand-Backend\\rag-chatbot-service\\features\\geocode_cache2.csv")
 
+for i, row in df.iloc[991:].iterrows():
+    address = row["address"]
 
-if __name__ == "__main__":
-    index_to_pinecone()
+    lat, lng = geocode_goong(address)
+
+    df.loc[i, "lat"] = lat
+    df.loc[i, "lng"] = lng
+
+    print(f"Done {i}: {address}", lat, lng)
+
+    time.sleep(0.3)
+
+df.to_csv("output.csv", index=False, encoding="utf-8-sig")

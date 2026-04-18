@@ -3,18 +3,15 @@ package com.tanle.tland.post_service.mapper.decorator;
 import com.tanle.tland.post_service.entity.Post;
 import com.tanle.tland.post_service.grpc.UserInfoRequest;
 import com.tanle.tland.post_service.grpc.UserPostInfoResponse;
-import com.tanle.tland.post_service.grpc.UserToPostServiceGrpc;
 import com.tanle.tland.post_service.mapper.AssetMapper;
 import com.tanle.tland.post_service.mapper.PostMapper;
 import com.tanle.tland.post_service.mapper.UserMapper;
 import com.tanle.tland.post_service.response.PostDetailResponse;
 import com.tanle.tland.post_service.service.UserServiceGrpcClient;
-import com.tanle.tland.post_service.service.impl.AssetServiceGrpcClient;
+import com.tanle.tland.post_service.service.AssetServiceGrpcClient;
 import com.tanle.tland.user_serivce.grpc.AssetRequest;
 import com.tanle.tland.user_serivce.grpc.AssetResponse;
-import com.tanle.tland.user_serivce.grpc.AssetToPostServiceGrpc;
 import lombok.NoArgsConstructor;
-import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @NoArgsConstructor

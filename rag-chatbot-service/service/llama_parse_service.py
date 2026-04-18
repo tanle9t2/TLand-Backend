@@ -8,13 +8,17 @@ load_dotenv()
 parser = LlamaParse(api_key=os.getenv("LLAMA_PARSE_KEY"), result_type="markdown")
 
 
-async def parse_markdown(uploaded_file):
+async def parse_markdown(file_content, filename):
     tmp_dir = tempfile.mkdtemp()
-    tmp_path = os.path.join(tmp_dir, uploaded_file.filename)
+    tmp_path = os.path.join(tmp_dir, filename)
 
-    data = await uploaded_file.read()
-    with open(tmp_path, "wb") as f:
-        f.write(data)
+    if isinstance(file_content, bytes):
+        with open(tmp_path, "wb") as f:
+            f.write(file_content)
+    else:
+        data = await file_content.read()
+        with open(tmp_path, "wb") as f:
+            f.write(data)
 
     try:
         docs = await parser.aload_data(tmp_path)

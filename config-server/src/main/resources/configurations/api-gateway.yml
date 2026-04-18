@@ -3,7 +3,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8443/realms/TLand
+          issuer-uri: ${KEYCLOAK_URL}
+          jwk-set-uri: ${KEYCLOAK_INTERNAL}
   cloud:
     gateway:
       actuator:
@@ -35,8 +36,8 @@ spring:
               uri: lb:http://PAYMENT-SERVICE
               predicates:
                 - Path=/payment-service/api/v1/**
-            - id: rag-chatbot-service
-              uri: lb:http://RAG-CHATBOT-SERVICE
+            - id: ai-service
+              uri: lb:http://AI-SERVICE
               predicates:
                 - Path=/rag-service/api/v1/**
 
@@ -56,4 +57,9 @@ management:
         include: health,info,gateway
 app:
   cors:
-    allowed-origins: http://localhost:5173,http://localhost:5174
+    allowed-origins: ${CLIENT_URLS}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/

@@ -1,6 +1,6 @@
 eureka:
   instance:
-    hostname: localhost
+    hostname: discovery-service
   client:
     fetch-registry: false
     register-with-eureka: false #this means eureka doesn't register and maintain itself

@@ -12,6 +12,7 @@ import com.tanle.tland.user_serivce.grpc.*;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
 
 import java.util.Arrays;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 
 @GrpcService
 @RequiredArgsConstructor
+@Slf4j
 public class AssetGrpcServiceImpl extends AssetToPostServiceGrpc.AssetToPostServiceImplBase {
     private final AssetRepo assetRepo;
     private final CategoryRepo categoryRepo;
@@ -82,16 +84,19 @@ public class AssetGrpcServiceImpl extends AssetToPostServiceGrpc.AssetToPostServ
 
     @Override
     public void getAssetDetail(AssetRequest request, StreamObserver<AssetResponse> responseObserver) {
+        log.info("Asset id {}", request.getId());
         Optional<Asset> optionalAsset = assetRepo.findById(request.getId());
-        if (!optionalAsset.isPresent())
+        if (!optionalAsset.isPresent()) {
+            log.error("Not found asset id: {}", request.getId());
             responseObserver.onError(
                     Status.NOT_FOUND
                             .withDescription("Asset not found with ID: " + request.getId())
                             .asRuntimeException());
+            return;
+        }
 
         Asset asset = optionalAsset.get();
         AssetResponse response = assetMapper.convertToResponseGrpc(asset);
-
 
         responseObserver.onNext(response);
         responseObserver.onCompleted();

@@ -28,6 +28,8 @@ public interface PostRepo extends JpaRepository<Post, String> {
 
     boolean existsByAssetIdAndStatusIn(String assetId, List<PostStatus> status);
 
+    List<Post> findAllByStatus(PostStatus status);
+
     Page<PostHistory> findAllByAssetIdAndUserId(String assetId, String userId, Pageable pageable);
 
     @Query("""

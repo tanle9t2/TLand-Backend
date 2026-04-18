@@ -10,3 +10,7 @@ grpc:
     port: 9192
     enable-reflection: true
 
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/

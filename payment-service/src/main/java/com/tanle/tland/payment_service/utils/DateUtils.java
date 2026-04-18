@@ -1,43 +1,37 @@
 package com.tanle.tland.payment_service.utils;
 
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
 
 public class DateUtils {
-    protected static final SimpleDateFormat ISO_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
-    protected static final SimpleDateFormat VNPAY_DATE_FORMAT = new SimpleDateFormat("yyyyMMddHHmmss");
-    public static final Calendar VN_CALENDAR = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
 
-    public static Date parseISO(String date) {
-        try {
-            return ISO_DATE_FORMAT.parse(date);
-        } catch (Exception e) {
-            return null;
-        }
+    private static final ZoneId VN_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
+
+    private static final DateTimeFormatter ISO_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private static final DateTimeFormatter VNPAY_DATE_FORMAT =
+            DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+
+    public static String getVnTime() {
+        return ZonedDateTime.now(VN_ZONE).format(VNPAY_DATE_FORMAT);
+    }
+
+    public static String formatVnTime(ZonedDateTime dateTime) {
+        return dateTime.withZoneSameInstant(VN_ZONE).format(VNPAY_DATE_FORMAT);
     }
 
     public static String convertDateEmail(Long timestamp) {
-
         LocalDateTime dateTime = Instant.ofEpochMilli(timestamp)
-                .atZone(ZoneId.systemDefault())
+                .atZone(VN_ZONE)
                 .toLocalDateTime();
-
-
-        DateTimeFormatter monthYearFormatter = DateTimeFormatter.ofPattern("MMM, yyyy");
 
         int day = dateTime.getDayOfMonth();
         String dayWithSuffix = day + getDaySuffix(day);
-        String formatted = dateTime.format(DateTimeFormatter.ofPattern("MMM")) + ", " + dayWithSuffix + " " + dateTime.getYear();
 
-        return formatted;
+        return dateTime.format(DateTimeFormatter.ofPattern("MMM"))
+                + ", " + dayWithSuffix + " " + dateTime.getYear();
     }
 
     private static String getDaySuffix(int day) {
@@ -55,14 +49,6 @@ public class DateUtils {
     }
 
     public static LocalDate parse(String date) {
-        return LocalDate.parse(date);
-    }
-
-    public static String getVnTime() {
-        return VNPAY_DATE_FORMAT.format(VN_CALENDAR.getTime());
-    }
-
-    public static String formatVnTime(Calendar calendar) {
-        return VNPAY_DATE_FORMAT.format(calendar.getTime());
+        return LocalDate.parse(date, ISO_DATE_FORMAT);
     }
 }

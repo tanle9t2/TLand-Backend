@@ -19,6 +19,7 @@ import io.grpc.stub.StreamObserver;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -38,6 +39,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserServiceImpl implements UserService {
     private final UserRepo userRepo;
     private final UserMapper userMapper;
@@ -86,6 +88,8 @@ public class UserServiceImpl implements UserService {
                 .createdAt(LocalDateTime.now())
                 .email(request.getEmail())
                 .isActive(true)
+                .lastAccess(LocalDateTime.now())
+                .phoneNumber(request.getPhoneNumber())
                 .sex(true)
                 .username(request.getUsername())
                 .build();
@@ -101,7 +105,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public UserProfileResponse findProfileUser(String id, HttpServletRequest httpServletRequest) {
         Optional<UserProfile> optionalUserProfile = userRepo.findProfileUser(id);
-
+        log.info("User id: {}", id);
         if (!optionalUserProfile.isPresent()) {
             String keycloakId = httpServletRequest.getHeader("X-UserId");
             String username = httpServletRequest.getHeader("X-Username");
@@ -122,6 +126,7 @@ public class UserServiceImpl implements UserService {
         }
 
         UserProfile userProfile = optionalUserProfile.get();
+        log.info("User profile", id);
         return userMapper.convertToResponse(userProfile);
 
     }

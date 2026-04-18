@@ -30,8 +30,7 @@ public class SearchConsumer {
     )
     public void syncCourse(ConsumerRecord<?, ?> consumerRecord) {
         try {
-            JsonNode root = objectMapper.readTree((String) consumerRecord.value());
-            JsonNode payload = root.path("payload");
+            JsonNode payload = objectMapper.readTree((String) consumerRecord.value());
 
             if (payload.isMissingNode()) {
                 log.warn("No payload found in message: {}", consumerRecord.value());
@@ -45,16 +44,19 @@ public class SearchConsumer {
                 case "c": // CREATE
                     postId = payload.path("after").path("id").asText();
                     asyncService.createPost(postId);
+                    log.info("Create new post to ES: {}", postId);
                     break;
 
                 case "u": // UPDATE
                     postId = payload.path("after").path("id").asText();
                     asyncService.updatePost(postId);
+                    log.info("Update post to ES: {}", postId);
                     break;
 
                 case "d": // DELETE
                     postId = payload.path("before").path("id").asText();
                     asyncService.deletePost(postId);
+                    log.info("Delete post from ES: {}", postId);
                     break;
 
                 default:

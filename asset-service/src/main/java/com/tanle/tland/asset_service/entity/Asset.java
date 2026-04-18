@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -45,6 +46,28 @@ public class Asset {
             contents = new ArrayList<>();
 
         contents.add(content);
+    }
+
+    @Override
+    public String toString() {
+        return "Asset{" +
+                "id='" + id + '\'' +
+                ", createdAt=" + createdAt +
+                ", province='" + province + '\'' +
+                ", ward='" + ward + '\'' +
+                ", address='" + address + '\'' +
+                ", dimension=" + Arrays.toString(dimension) +
+                ", properties=" + properties +
+                ", locationAsset=" + locationAsset +
+                ", otherInfo=" + Arrays.toString(otherInfo) +
+                ", landArea=" + landArea +
+                ", usableArea=" + usableArea +
+                ", projectId='" + projectId + '\'' +
+                ", userId='" + userId + '\'' +
+                ", categoryId='" + categoryId + '\'' +
+                ", type=" + type +
+                ", contents=" + contents +
+                '}';
     }
 
     public Image getPoster() {

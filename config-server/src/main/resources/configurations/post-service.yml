@@ -1,6 +1,6 @@
 # file: user-service.yml (trong config server)
 server:
-  port: 8083
+  port: 8099
   servlet:
     context-path: /post-service
 
@@ -11,16 +11,16 @@ spring:
       max-file-size: 100MB
       max-request-size: 50MB
   datasource:
-    url: jdbc:mysql://localhost:3306/tland_postdb
-    username: root
-    password: 090224@Tan
+    url: ${POST_DB_URL}
+    username: ${POST_DB_USER}
+    password: ${POST_DB_PASSWORD}
   jpa:
     properties:
       hibernate:
         format_sql: true
   kafka:
     producer:
-      bootstrap-servers: 127.0.0.1:19091,127.0.0.1:19092,127.0.0.1:19093
+      bootstrap-servers: ${KAFKA_SERVER}
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     #      properties:
@@ -28,6 +28,7 @@ spring:
 
     consumer:
       group-id: tland-post
+      bootstrap-servers: ${KAFKA_SERVER}
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
@@ -82,3 +83,8 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus,circuitbreakers
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/

@@ -11,8 +11,8 @@ public class PaymentTopicConfig {
     public NewTopic orderTopic() {
         return TopicBuilder
                 .name("tland-payment-topic")
-                .replicas(2)
-                .partitions(2)
+                .replicas(1)
+                .partitions(1)
                 .build();
     }
 }

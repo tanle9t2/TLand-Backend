@@ -1,4 +1,4 @@
-package com.tanle.tland.post_service.service.impl;
+package com.tanle.tland.post_service.service;
 
 import com.tanle.tland.user_serivce.grpc.AssetRequest;
 import com.tanle.tland.user_serivce.grpc.AssetResponse;

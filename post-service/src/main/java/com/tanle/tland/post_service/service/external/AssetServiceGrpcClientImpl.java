@@ -1,8 +1,6 @@
 package com.tanle.tland.post_service.service.external;
 
-import com.tanle.tland.post_service.grpc.UserInfoRequest;
-import com.tanle.tland.post_service.grpc.UserPostInfoResponse;
-import com.tanle.tland.post_service.service.impl.AssetServiceGrpcClient;
+import com.tanle.tland.post_service.service.AssetServiceGrpcClient;
 import com.tanle.tland.user_serivce.grpc.*;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;

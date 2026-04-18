@@ -1,9 +1,9 @@
-from typing import List, Optional
+from typing import List, Optional, Any
 from pydantic import BaseModel
 
 class ChatHistoryItem(BaseModel):
     human: str
-    ai: str
+    ai: Any
 
 class QueryRequest(BaseModel):
     question: str

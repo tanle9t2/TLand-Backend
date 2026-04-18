@@ -15,16 +15,21 @@ import com.tanle.tland.payment_service.response.IpnResponse;
 import com.tanle.tland.payment_service.utils.*;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @RequiredArgsConstructor
 @GrpcService
+@Slf4j
 public class PaymentService extends PaymentServiceGrpc.PaymentServiceImplBase {
 
 
@@ -40,28 +45,41 @@ public class PaymentService extends PaymentServiceGrpc.PaymentServiceImplBase {
     private String tmnCode;
 
     @Value("${payment.vnpay.timeout}")
-    private Integer paymentTimeout; //minutes
+    private Integer paymentTimeout;
 
-    @Override
     public void getPaymentUrl(PaymentUrlRequest request, StreamObserver<PaymentUrlResponse> responseObserver) {
-        var amount = request.getAmount() * DEFAULT_MULTIPLIER;  // 1. amount * 100
-        var txnRef = request.getTxnRef();                       // 2. registerId
-        var returnUrl = VNPayUtils.buildReturnUrl(txnRef);                 // 3. FE redirect by returnUrl
-
-        var vnCalendar = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
-        var createdDate = DateUtils.formatVnTime(vnCalendar);
-        vnCalendar.add(Calendar.MINUTE, paymentTimeout);
-        var expiredDate = DateUtils.formatVnTime(vnCalendar);    // 4. expiredDate for secure
-
+        var amount = request.getAmount() * DEFAULT_MULTIPLIER;
+        var txnRef = request.getTxnRef();
         var ipAddress = request.getIpAddress();
-        var orderInfo = VNPayUtils.buildPaymentDetail(txnRef, PurposeType.valueOf(request.getPurposeType())
-                , TransactionType.valueOf(request.getTransactionType()));
 
+        log.info("Request info - txnRef: {}, amount: {}, ip: {}", txnRef, amount, ipAddress);
+
+        var returnUrl = VNPayUtils.buildReturnUrl(txnRef);
+        log.info("Return URL: {}", returnUrl);
+
+        var zone = ZoneId.of("Asia/Ho_Chi_Minh");
+        var now = ZonedDateTime.now(zone);
+
+        var createdDate = DateUtils.formatVnTime(now);
+        var expiredDate = DateUtils.formatVnTime(now.plusMinutes(paymentTimeout));
+
+        log.info("Time info - now(VN): {}", now);
+        log.info("CreatedDate: {}, ExpiredDate: {}", createdDate, expiredDate);
+
+        var utcNow = ZonedDateTime.now(ZoneOffset.UTC);
+        log.info("UTC time: {}", utcNow);
+
+        var orderInfo = VNPayUtils.buildPaymentDetail(
+                txnRef,
+                PurposeType.valueOf(request.getPurposeType()),
+                TransactionType.valueOf(request.getTransactionType())
+        );
+
+        log.info("Order info: {}", orderInfo);
         Map<String, String> params = new HashMap<>();
 
         params.put(VNPayParams.VERSION, VERSION);
         params.put(VNPayParams.COMMAND, COMMAND);
-
         params.put(VNPayParams.TMN_CODE, tmnCode);
         params.put(VNPayParams.AMOUNT, String.valueOf(amount));
         params.put(VNPayParams.CURRENCY, CurrencyUtils.VND.getValue());
@@ -73,13 +91,16 @@ public class PaymentService extends PaymentServiceGrpc.PaymentServiceImplBase {
         params.put(VNPayParams.EXPIRE_DATE, expiredDate);
 
         params.put(VNPayParams.IP_ADDRESS, ipAddress);
-
         params.put(VNPayParams.LOCALE, LocaleUtils.VIETNAM.getCode());
 
         params.put(VNPayParams.ORDER_INFO, orderInfo);
         params.put(VNPayParams.ORDER_TYPE, ORDER_TYPE);
 
+        log.info("VNPay params: {}", params);
+
         var initPaymentUrl = VNPayUtils.buildInitPaymentUrl(params);
+
+        log.info("VNPay URL generated: {}", initPaymentUrl);
 
         PaymentUrlResponse response = PaymentUrlResponse.newBuilder()
                 .setVnpUrl(initPaymentUrl)

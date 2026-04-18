@@ -29,6 +29,7 @@ import org.apache.catalina.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -83,7 +84,7 @@ public class AssetServiceImpl implements AssetService {
 
     @Override
     public PageResponse<AssetSummaryResponse> findAll(String userId, int page, int size) {
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<AssetSummary> assetPage = assetRepo.findAllByUserIdAndType(userId, AssetType.PERSIST, pageable);
         List<AssetSummaryResponse> data = assetPage.get()
                 .map(a -> {

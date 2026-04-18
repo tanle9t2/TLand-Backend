@@ -20,7 +20,7 @@ spring:
       username: ${MONGO_USERNAME}
       password: ${MONGO_PASSWORD}
       host: ${MONGO_HOST}
-      port: 27017
+      port: ${MONGO_PORT}
 
 
 grpc:
@@ -63,3 +63,8 @@ management:
     web:
       exposure:
         include: health,info,metrics,prometheus,circuitbreakers
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
