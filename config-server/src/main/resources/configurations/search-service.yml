@@ -10,14 +10,14 @@ spring:
       max-file-size: 100MB
       max-request-size: 50MB
   elasticsearch:
-    uris: ${ES_SERVER}
-    username: ${ES_USERNAME}
-    password: ${ES_PASSWORD}
+    uris: http://localhost:9200
+    username: docker-cluster
+    password: 090224T@n
     index-recovery:
-      mode: full # Make sure recovery mode is set to full
+      mode: full  # Make sure recovery mode is set to full
   kafka:
     consumer:
-      bootstrap-servers: ${KAFKA_SERVER}
+      bootstrap-servers: localhost:29091
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
@@ -36,8 +36,3 @@ grpc:
     postServiceGrpc:
       address: "discovery:///post-service"
       negotiationType: PLAINTEXT
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://discovery-service:8761/eureka/

@@ -1,5 +1,6 @@
 package com.tanle.tland.api_gateway.filter;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -13,10 +14,12 @@ import java.util.List;
 import java.util.Map;
 
 @Component
+@Slf4j
 public class JwtClaimsFilter implements GlobalFilter {
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        log.info(">>> PATH: " + exchange.getRequest().getURI().getPath());
         return exchange.getPrincipal()
                 .cast(Authentication.class)
                 .flatMap(auth -> {

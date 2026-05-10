@@ -93,11 +93,6 @@ def process_markdown(markdown_text: str, filename: str, doc_type: DocType, file_
 
 
 def _smart_markdown_chunking(text: str) -> list[str]:
-    """
-    Chunking thông minh cho markdown:
-    - Tách bảng ra riêng, giữ nguyên cấu trúc bảng
-    - Text thường → semantic chunking
-    """
     blocks = _split_tables_from_text(text)
     all_chunks = []
 
@@ -114,9 +109,6 @@ def _smart_markdown_chunking(text: str) -> list[str]:
 
 
 def _split_tables_from_text(text: str) -> list[tuple[str, str]]:
-    """
-    Tách markdown thành các blocks: ("text", content) hoặc ("table", content).
-    """
     lines = text.split("\n")
     blocks = []
     current_type = "text"
@@ -148,9 +140,6 @@ def _split_tables_from_text(text: str) -> list[tuple[str, str]]:
 
 
 def _chunk_table(table_text: str, max_rows_per_chunk: int = 15) -> list[str]:
-    """
-    Chunk bảng markdown theo nhóm hàng, giữ header+separator ở mỗi chunk.
-    """
     lines = [l for l in table_text.split("\n") if l.strip()]
     if len(lines) <= 2:
         return [table_text]

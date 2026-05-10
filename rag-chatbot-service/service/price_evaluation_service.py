@@ -54,7 +54,7 @@ class PriceEvaluationService:
         self.llm = ChatOpenAI(model=model_name, temperature=0)
         self.prompt = ChatPromptTemplate.from_template(_EXTRACTION_PROMPT)
 
-    def evaluate(self, doc_text: str, actual_price: Optional[float] = None) -> Dict[str, Any]:
+    async def evaluate(self, doc_text: str, actual_price: Optional[float] = None) -> Dict[str, Any]:
         """
         1. Extract features from text
         2. Predict price using HouseService
@@ -83,7 +83,7 @@ class PriceEvaluationService:
             prediction_made = False
 
             if not missing_fields:
-                prediction = HouseService.predict(features)
+                prediction = await HouseService.predict(features)
                 predicted_price_ty = prediction["total_price_ty"]
                 prediction_made = True
 
@@ -120,7 +120,7 @@ class PriceEvaluationService:
             return {"error": str(e)}
 
 
-    def evaluate_from_metadata(self, metadata: dict) -> Dict[str, Any]:
+    async def evaluate_from_metadata(self, metadata: dict) -> Dict[str, Any]:
         """
         Evaluate price directly from Pinecone structured metadata,
         bypassing the costly LLM feature-extraction step.
@@ -157,7 +157,7 @@ class PriceEvaluationService:
             prediction_made = False
 
             if not missing_fields:
-                prediction = HouseService.predict(features)
+                prediction = await HouseService.predict(features)
                 predicted_price_ty = prediction["total_price_ty"]
                 prediction_made = True
 

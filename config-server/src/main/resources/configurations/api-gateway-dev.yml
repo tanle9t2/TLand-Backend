@@ -1,0 +1,65 @@
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_URL}
+          jwk-set-uri: ${KEYCLOAK_INTERNAL}
+  cloud:
+    gateway:
+      actuator:
+        enabled: true
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: false
+              lower-case-service-id: true
+          routes:
+            - id: user-service
+              uri: lb:http://USER-SERVICE
+              predicates:
+                - Path=/user-service/api/v1/**
+            - id: asset-service
+              uri: lb:http://ASSET-SERVICE
+              predicates:
+                - Path=/asset-service/api/v1/**
+            - id: post-service
+              uri: lb:http://POST-SERVICE
+              predicates:
+                - Path=/post-service/api/v1/**
+            - id: search-service
+              uri: lb:http://SEARCH-SERVICE
+              predicates:
+                - Path=/search-service/api/v1/**
+            - id: payment-service
+              uri: lb:http://PAYMENT-SERVICE
+              predicates:
+                - Path=/payment-service/api/v1/**
+            - id: ai-service
+              uri: lb:http://AI-SERVICE
+              predicates:
+                - Path=/rag-service/api/v1/**
+
+  main:
+    web-application-type: reactive
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.server: DEBUG
+    reactor.netty: INFO
+server:
+  port: 9292
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
+app:
+  cors:
+    allowed-origins: ${CLIENT_URLS}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/

@@ -1,16 +1,16 @@
-⚠️ QUY TẮC SỐ 1 - ĐỊNH DẠNG ĐẦU RA (OUTPUT FORMAT) - ĐỌC TRƯỚC TIÊN:
+QUY TẮC SỐ 1 - ĐỊNH DẠNG ĐẦU RA (OUTPUT FORMAT) - ĐỌC TRƯỚC TIÊN:
 Toàn bộ câu trả lời PHẢI là một JSON object hợp lệ duy nhất. TUYỆT ĐỐI KHÔNG sinh ra bất kỳ văn bản nào bên ngoài khối JSON.
 
 NHIỆM VỤ: Giới thiệu CHI TIẾT một BĐS cụ thể, kết hợp đánh giá giá thị trường từ mô hình dự báo (nếu có).
 
---- 📋 QUY TẮC ---
+---  QUY TẮC ---
 1. Đọc [DỮ LIỆU THAM KHẢO] để lấy đầy đủ thông tin về BĐS được yêu cầu.
 2. Nếu [KẾT QUẢ ĐÁNH GIÁ TỪ MÔ HÌNH DỰ BÁO] có trong dữ liệu -> BẮT BUỘC tổng hợp đánh giá này vào trường `priceEvaluation`.
 3. `message` chỉ chứa 1-2 câu ngắn giới thiệu tổng quát. KHÔNG liệt kê chi tiết ở đây.
 4. Toàn bộ thông tin chi tiết vào trường `property`.
 5. Nhận xét chuyên sâu của agent về BĐS vào `agentAnalysis`.
 
---- 🎨 ĐỊNH DẠNG TRẢ VỀ ---
+---  ĐỊNH DẠNG TRẢ VỀ ---
 {{
   "message": "1-2 câu ngắn tóm lược về BĐS (Markdown)",
   "property": {{
@@ -27,7 +27,7 @@ NHIỆM VỤ: Giới thiệu CHI TIẾT một BĐS cụ thể, kết hợp đán
   "priceEvaluation": {{
     "predictedPrice": "X.XX tỷ VND",
     "listedPrice": "Giá niêm yết",
-    "verdict": "🟢 RẺ / 🟡 HỢP LÝ / 🔴 ĐẮT",
+    "verdict": " RẺ /  HỢP LÝ /  ĐẮT",
     "diffPercent": "±X%",
     "analysis": "1-2 câu phân tích ngắn gọn về mức giá"
   }},

@@ -13,6 +13,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 @Repository
@@ -25,6 +27,17 @@ public interface PostRepo extends JpaRepository<Post, String> {
             and p.status =:status
             """)
     Page<Post> findAllByType(Pageable pageable, @Param("type") PostType type, @Param("status") PostStatus status);
+
+    @Query("""
+                select p from Post p
+                where p.status = :status
+                and p.createdAt between :fromTime and :toTime
+            """)
+    List<Post> findAllForCancel(
+            @Param("status") PostStatus status,
+            @Param("fromTime") LocalDateTime fromTime,
+            @Param("toTime") LocalDateTime toTime
+    );
 
     boolean existsByAssetIdAndStatusIn(String assetId, List<PostStatus> status);
 

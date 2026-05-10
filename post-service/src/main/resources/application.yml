@@ -2,4 +2,4 @@ spring:
   application:
     name: post-service
   config:
-    import: optional:file:.env,optional:configserver:http://config-server:8888
+    import: optional:file:.env,optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}

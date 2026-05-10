@@ -9,25 +9,29 @@ from service.embeeding_service import markdown_chunking, delete_post_from_pineco
 from service.knowledge_service import KnowledgeService
 from service.rag_qa import ask_question
 from fastapi import APIRouter, HTTPException, UploadFile, File, Depends, Form
+
 # from service.post_service import async_post as async_post_grpc
 
 router = APIRouter(prefix="/api/v1/chat", tags=["Chatbot"])
+
 
 @router.get("/con")
 def convert():
     update_source_market_to_legal()
     return {"message": "Deleted successfully"}
 
+
 @router.post("/", response_model=QueryResponse)
 async def chat_endpoint(request: QueryRequest):
     try:
         # Convert chat_history to list of dicts (if needed by your ask_question)
         chat_history = [{"human": item.human, "ai": item.ai} for item in request.chat_history]
-        result = ask_question(request.question, chat_history=chat_history, k=10)
+        result = await ask_question(request.question, chat_history=chat_history, k=10)
 
         return QueryResponse(
             answer=result["answer"],
             context=result["context"],
+            intent=result["intent"],
         )
 
     except Exception as e:

@@ -1,0 +1,52 @@
+# file: user-service.yml (trong config server)
+server:
+  port: 8086
+  servlet:
+    context-path: /payment-service
+
+grpc:
+  server:
+    port: 9195
+    enable-reflection: true
+
+spring:
+  datasource:
+    url: ${PAYMENT_DB_URL}
+    username: ${PAYMENT_DB_USERNAME}
+    password: ${PAYMENT_DB_PASSWORD}
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVER}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.type.mapping: paymentEvent:com.tanle.tland.payment_service.event.PaymentEvent
+
+    consumer:
+      group-id: payment-service
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: "*"
+        spring.json.type.mapping: paymentEvent:com.tanle.tland.payment_service.event.PaymentEvent
+      auto-offset-reset: latest
+
+payment:
+  vnPay:
+    return-url: ${RETURN_URL}
+    tmnCode: ${TMN_CODE}
+    secret-key: ${SECRET_KEY}
+    version: ${VNPAY_VERSION}
+    command: ${COMMAND}
+    orderType: ${ORDER_TYPE}
+    init-payment-url: ${INIT_PAYMENT_URL}
+    timeout: ${TIME_OUT}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/

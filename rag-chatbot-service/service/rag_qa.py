@@ -34,30 +34,49 @@ def _load_prompt(filename: str) -> str:
 
 
 _BASE_PERSONA = _load_prompt("base_persona.txt")
-_CONSULTATION_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("consultation_prompt.txt")
-_MARKET_ANALYSIS_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("market_analysis_prompt.txt")
-_BANK_LOAN_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("bank_loan_prompt.txt")
-_PROPERTY_DETAIL_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("property_detail_prompt.txt")
-_LEGAL_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("legal_prompt.txt")
+CONSULTATION_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("consultation_prompt.txt")
+MARKET_ANALYSIS_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("market_analysis_prompt.txt")
+BANK_LOAN_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("bank_loan_prompt.txt")
+PROPERTY_DETAIL_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("property_detail_prompt.txt")
+LEGAL_PROMPT = _BASE_PERSONA + "\n" + _load_prompt("legal_prompt.txt")
+INTENT_DETECTION_PROMPT = _load_prompt("intent_detection_prompt.txt")
+QUERY_REFORMULATION_PROMPT = _load_prompt("query_reformulation_prompt.txt")
+CLARIFYING_PROMPT = _load_prompt("clarifying_prompt.txt")
+OFF_TOPIC_PROMPT = _load_prompt("off_topic_prompt.txt")
 
-
-
-# Regex patterns that indicate the user is referencing a previously listed property
 _PROPERTY_REF_PATTERN = re.compile(
-    r"(c[aă]n\s*(s[oố]|th[uứ])?\s*\d+"           # "căn 1", "căn số 2", "căn thứ 3"
+    r"(c[aă]n\s*(s[oố]|th[uứ])?\s*\d+"  # "căn 1", "căn số 2", "căn thứ 3"
     r"|c[aă]n\s*(đầu\s*tiên|nh[aâ]́t|đ[oó]|n[aà]y|tr[eê]́n)"  # "căn đầu tiên", "căn đó", "căn này"
-    r"|đ[aá]nh\s*gi[aá]\s*c[aă]n"                 # "đánh giá căn"
-    r"|chi\s*ti[eế]t\s*c[aă]n"                    # "chi tiết căn"
+    r"|đ[aá]nh\s*gi[aá]\s*c[aă]n"  # "đánh giá căn"
+    r"|chi\s*ti[eế]t\s*c[aă]n"  # "chi tiết căn"
     r"|xem\s*(th[eê]m|c[aă]n|n[hờ][aà])\s*(đ[oó]|n[aà]y|\d+)"  # "xem thêm căn đó"
     r")",
     re.IGNORECASE | re.UNICODE,
 )
 
+_PRICE_PATTERN = re.compile(
+    r"(\d+[.,]?\d*\s*(tỷ|triệu|billion|tr))"
+    r"|(ngân sách|budget|giá|khoảng giá|tầm giá|dưới|trên|từ.*đến)",
+    re.IGNORECASE | re.UNICODE,
+)
 
-def _detect_intent(query: str, standalone_query: str, llm: ChatOpenAI, chat_history=None) -> str:
-    # --- Rule-based pre-check (no LLM call needed) ---
-    # If the original query references a specific listed property AND history has properties,
-    # immediately classify as PROPERTY_DETAIL to avoid the standalone_query misleading the LLM.
+_LOCATION_PATTERN = re.compile(
+    r"(quận|huyện|phường|đường|tp\.|thành phố|tỉnh"
+    r"|bình thạnh|gò vấp|tân bình|thủ đức|bình dương|đồng nai"
+    r"|quận\s*\d+|q\.?\s*\d+)",
+    re.IGNORECASE | re.UNICODE,
+)
+
+
+def _has_price(text: str) -> bool:
+    return bool(_PRICE_PATTERN.search(text))
+
+
+def _has_location(text: str) -> bool:
+    return bool(_LOCATION_PATTERN.search(text))
+
+
+async def detect_intent(query: str, standalone_query: str, llm: ChatOpenAI, chat_history=None) -> str:
     if _PROPERTY_REF_PATTERN.search(query):
         has_properties_in_history = False
         if chat_history:
@@ -71,23 +90,12 @@ def _detect_intent(query: str, standalone_query: str, llm: ChatOpenAI, chat_hist
             print(f"[DEBUG] Rule-based pre-check: PROPERTY_DETAIL (ordinal ref in query + history has properties)")
             return "PROPERTY_DETAIL"
 
-    # Contextualize question prompt
-    contextualize_q_prompt = ChatPromptTemplate.from_messages([
-        ("system",
-         "Phân loại yêu cầu của người dùng vào 1 trong 6 loại:\n"
-         "'MARKET_ANALYSIS': hỏi đắt rẻ, so sánh giá, nhận định thị trường BĐS.\n"
-         "'BANK_LOAN': hỏi về vay vốn ngân hàng, thiếu tiền, lãi suất.\n"
-         "'PROPERTY_DETAIL': muốn xem chi tiết về 1 căn cụ thể đã được đề cập (VD: 'chi tiết căn 1', 'cho tui xem thêm căn đó', 'căn thứ 2 thế nào').\n"
-         "'LEGAL': hỏi về pháp lý đất đai, luật nhà ở, thủ tục mua bán, sổ đỏ/sổ hồng, tranh chấp đất, thuế phí giao dịch BĐS, quy hoạch, hợp đồng, công chứng, quyền sử dụng đất. "
-         "VD: 'sổ đỏ là gì', 'thủ tục sang tên', 'đặt cọc có rủi ro không', 'đất chưa có sổ mua được không'.\n"
-         "'UNCLEAR': câu hỏi quá mơ hồ, thiếu thông tin tối thiểu để tìm kiếm BĐS hiệu quả — KHÔNG có khu vực/quận, KHÔNG có khoảng giá, KHÔNG có loại hình cụ thể. "
-         "VD: 'tôi cần mua nhà', 'tìm nhà giúp tôi', 'có nhà không', 'cần thuê chỗ ở'.\n"
-         "'CONSULTATION': tìm nhà/căn hộ/đất với ít nhất 1 tiêu chí cụ thể (khu vực, giá, loại hình, diện tích...).\n"
-         "Chỉ trả về đúng 1 từ khóa duy nhất."),
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", INTENT_DETECTION_PROMPT),
         ("human", "Câu hỏi gốc: {query}\nCâu diễn giải có ngữ cảnh: {standalone_query}")
     ])
     chain = prompt | llm
-    response = chain.invoke({"query": query, "standalone_query": standalone_query})
+    response = await chain.ainvoke({"query": query, "standalone_query": standalone_query})
     intent = response.content.strip().upper()
 
     if "MARKET_ANALYSIS" in intent:
@@ -98,17 +106,31 @@ def _detect_intent(query: str, standalone_query: str, llm: ChatOpenAI, chat_hist
         return "PROPERTY_DETAIL"
     if "LEGAL" in intent:
         return "LEGAL"
+    if "OFF_TOPIC" in intent:
+        return "OFF_TOPIC"
     if "UNCLEAR" in intent:
         return "UNCLEAR"
     return "CONSULTATION"
 
 
+async def _ask_clarifying_question(query: str, standalone_query: str, llm: ChatOpenAI) -> dict:
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", CLARIFYING_PROMPT),
+        ("human", "Yêu cầu gốc: {query}\nDiễn giải: {standalone_query}")
+    ])
+    chain = prompt | llm.bind(response_format={"type": "json_object"})
+    try:
+        response = await chain.ainvoke({"query": query, "standalone_query": standalone_query})
+        return json.loads(response.content)
+    except Exception as exc:
+        print(f"[DEBUG] {exc}")
+
+        return {
+            "message": "Dạ để em tìm được BĐS phù hợp nhất, anh/chị vui lòng cho em biết thêm khu vực và ngân sách khoảng bao nhiêu ạ?"
+        }
+
 
 def _resolve_property_from_history(chat_history: list, query: str) -> Optional[str]:
-    """
-    Extract propertyId from the last AI properties list based on
-    ordinal reference in query (e.g. 'căn 1', 'căn số 2', 'căn thứ nhất').
-    """
     if not chat_history:
         return None
 
@@ -127,7 +149,6 @@ def _resolve_property_from_history(chat_history: list, query: str) -> Optional[s
 
     q = query.lower()
 
-    # Numeric ordinal: "căn 1", "căn số 1", "căn thứ 1", "căn đầu tiên"
     match = re.search(r"c[aă]n\s*(?:s[oố]|th[uứ])?\s*(\d+)", q)
     if match:
         idx = int(match.group(1)) - 1
@@ -167,13 +188,7 @@ def _fetch_pinecone_entry_by_id(property_id: str) -> Optional[dict]:
         return None
 
 
-def ask_question(query: str, chat_history=None, k: int = 5):
-    """
-      1. Auto-extract metadata filters from query
-      2. Hybrid search (vector + BM25 + RRF) with filters
-      3. Cohere reranker
-      4. LLM answer generation
-    """
+async def ask_question(query: str, chat_history=None, k: int = 5):
     llm = ChatOpenAI(model=llm_model, temperature=0)
     formatted_history = _format_chat_history(chat_history)
 
@@ -181,87 +196,85 @@ def ask_question(query: str, chat_history=None, k: int = 5):
         formatted_history = formatted_history[-10:]
 
     contextualize_q_prompt = ChatPromptTemplate.from_messages([
-        (
-            "system",
-            "Bạn là chuyên gia tái cấu trúc truy vấn (query reformulation) cho hệ thống AI tìm kiếm Bất động sản (BĐS).\n\n"
-            "--- NHIỆM VỤ ---\n"
-            "Đọc toàn bộ lịch sử hội thoại và câu mới nhất của người dùng. Viết lại nội dung mới nhất thành MỘT CÂU ĐỘC LẬP (standalone query) chứa đầy đủ ngữ cảnh từ lịch sử NHƯNG BẮT BUỘC PHẢI PHẢN ÁNH ĐÚNG Ý ĐỊNH TÌM KIẾM HIỆN TẠI.\n\n"
-            "--- QUY TẮC (CONSTRAINTS) ---\n"
-            "1. HÌNH THỨC OUTPUT: CHỈ trả về đúng một chuỗi văn bản duy nhất của câu được viết lại. TUYỆT ĐỐI KHÔNG giải thích, KHÔNG có từ nối (VD: 'Câu hỏi là:', 'Đây là...').\n"
-            "2. KẾ THỪA (CARRY-OVER): Mang theo các định danh (Khu vực, Loại hình, Tên đường...) từ câu trước nếu ngữ cảnh vẫn đang tiếp diễn.\n"
-            "3. GHI ĐÈ (OVERRIDE): Nếu câu mới nhất có đề cập thay đổi mâu thuẫn với câu cũ (VD: đổi ngân sách từ 5 tỷ thành 7 tỷ), PHẢI ƯU TIÊN dùng tiêu chí MỚI NHẤT.\n"
-            "4. MỞ RỘNG (BROADEN): Nếu câu mới ngụ ý tìm kiếm mành lưới mở rộng (VD: 'Vậy trong khu vực này đang có các bđs nào', 'tất cả bđs ở Gò Vấp', 'gợi ý cho tôi các căn khác'), BẮT BUỘC PHẢI LOẠI BỎ (DROP) các điều kiện giới hạn cũ (như ngân sách cũ, gò bó diện tích cũ) để có thể truy vấn bức tranh toàn cảnh.\n"
-            "5. BẢO TOÀN Ý ĐỊNH (INTENT PRESERVATION): Giữ nguyên bản chất của câu hỏi. Nếu là câu hỏi giá đắt rẻ, phàn nàn thiếu tiền vay vốn, hoặc chốt mua, cần phải giữ đúng sắc thái đó.\n\n"
-            "--- VÍ DỤ MINH HỌA (FEW-SHOT EXAMPLES) ---\n"
-            "Lịch sử: [User: 'Tôi muốn tìm căn hộ tại Quận 2'] \n"
-            "Câu mới: 'Có những căn nào tầm 3 tỷ không?'\n"
-            "-> Output: Tìm căn hộ tại Quận 2 có mức giá khoảng 3 tỷ.\n\n"
-
-            "Lịch sử: [User: 'Tìm căn hộ Quận 2 tầm 3 tỷ', AI: 'Hiện chưa có căn 3 tỷ...'] \n"
-            "Câu mới: 'Thế khu đó hiện đang có các căn nào?'\n"
-            "-> Output: Tìm kiếm tất cả các căn hộ hiện đang có trong khu vực Quận 2.\n\n"
-
-            "Lịch sử: [User: 'Nhà hẻm ở quận 9 giá 5 tỷ'] \n"
-            "Câu mới: 'Giá như vậy mua có bị hớ không?'\n"
-            "-> Output: Đánh giá xem mức giá 5 tỷ cho ngôi nhà hẻm ở Quận 9 là đắt hay rẻ so với thị trường.\n\n"
-
-            "--- LƯU Ý CUỐI ---\n"
-            "Đảm bảo OUTPUT cuối cùng chuẩn xác, ngắn gọn và là dạng câu hỏi đơn độc lập."
-        ),
+        ("system", QUERY_REFORMULATION_PROMPT),
         MessagesPlaceholder("chat_history"),
         ("human", "{input}"),
     ])
 
     if formatted_history:
         contextualize_q_chain = contextualize_q_prompt | llm
-        standalone_query = contextualize_q_chain.invoke({
+        standalone_query = (await contextualize_q_chain.ainvoke({
             "input": query,
             "chat_history": formatted_history
-        }).content
+        })).content
     else:
         standalone_query = query
-
-    intent = _detect_intent(query, standalone_query, llm, chat_history)
     print(f"[DEBUG] query: {query}")
     print(f"[DEBUG] standalone_query: {standalone_query}")
+
+    intent = await detect_intent(query, standalone_query, llm, chat_history)
     print(f"[DEBUG] Detected intent: {intent}")
 
-    # --- Early exit for vague queries: skip entire search pipeline ---
-    if intent == "UNCLEAR":
-        print("[DEBUG] Intent=UNCLEAR — skipping search pipeline, returning clarifying question")
+    if intent == "OFF_TOPIC":
+        print("[DEBUG] Intent=OFF_TOPIC — generating dynamic response")
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", OFF_TOPIC_PROMPT),
+            ("human", "{query}")
+        ])
+        chain = prompt | llm.bind(response_format={"type": "json_object"})
+        try:
+            response = await chain.ainvoke({"query": query})
+            off_topic_answer = json.loads(response.content)
+        except Exception:
+            off_topic_answer = {
+                "message": "Xin lỗi anh/chị, chuyên môn của em là tư vấn **Bất động sản**. Anh/chị có đang quan tâm đến khu vực hay dự án nào không ạ?"
+            }
         return {
-            "answer": {
-                "message": (
-                    "Bạn có thể cho tôi biết thêm một số thông tin để tìm kiếm chính xác hơn không? 😊\n\n"
-                    "Cụ thể:\n"
-                    "- **Khu vực mong muốn**: quận/huyện hoặc đường cụ thể?\n"
-                    "- **Ngân sách**: khoảng bao nhiêu tỷ hoặc triệu?\n"
-                    "- **Loại hình**: nhà phố, căn hộ, đất nền, hay nhà trọ?\n"
-                    "- **Mục đích**: để ở, đầu tư, hay cho thuê lại?"
-                ),
-                "properties": []
-            },
+            "intent": intent,
+            "answer": {**off_topic_answer, "properties": []},
             "context": [],
         }
 
+    if intent == "UNCLEAR":
+        clarification = await _ask_clarifying_question(query, standalone_query, llm)
+        return {
+            "intent": intent,
+            "answer": {**clarification, "properties": []},
+            "context": [],
+        }
+
+    if intent == "CONSULTATION":
+        combined = f"{query} {standalone_query}"
+        has_loc = _has_location(combined)
+        has_price = _has_price(combined)
+        print(f"[DEBUG] CONSULTATION gate — has_location={has_loc}, has_price={has_price}")
+
+        if not has_loc or not has_price:
+            print("[DEBUG] CONSULTATION gate — missing fields, generating dynamic clarifying question")
+            clarification = await _ask_clarifying_question(query, standalone_query, llm)
+            return {
+                "intent": "UNCLEAR",
+                "answer": {**clarification, "properties": []},
+                "context": [],
+            }
+
     intent_config = {
-        "MARKET_ANALYSIS": (_MARKET_ANALYSIS_PROMPT, DocType.MARKET_ANALYSIS),
-        "BANK_LOAN": (_BANK_LOAN_PROMPT, DocType.BANK_LOAN),
-        "PROPERTY_DETAIL": (_PROPERTY_DETAIL_PROMPT, DocType.POST),
-        "LEGAL": (_LEGAL_PROMPT, DocType.LEGAL),
+        "MARKET_ANALYSIS": (MARKET_ANALYSIS_PROMPT, DocType.MARKET_ANALYSIS),
+        "BANK_LOAN": (BANK_LOAN_PROMPT, DocType.BANK_LOAN),
+        "PROPERTY_DETAIL": (PROPERTY_DETAIL_PROMPT, DocType.POST),
+        "LEGAL": (LEGAL_PROMPT, DocType.LEGAL),
     }
 
     selected_prompt, source = intent_config.get(
-        intent, (_CONSULTATION_PROMPT, DocType.POST)
+        intent, (CONSULTATION_PROMPT, DocType.POST)
     )
     pinecone_filter = {"source": {"$eq": source}}
 
-    if intent != "BANK_LOAN":
+    if intent != "BANK_LOAN" and intent != "LEGAL":
         pinecone_filter = extract_filters(pinecone_filter, standalone_query)
 
     print(f"[DEBUG] Pinecone filter: {pinecone_filter}")
 
-    # --- PROPERTY_DETAIL fast-path: resolve ID from history, fetch directly, skip hybrid search ---
     resolved_property_entry: Optional[dict] = None
     if intent == "PROPERTY_DETAIL":
         resolved_id = _resolve_property_from_history(chat_history or [], query)
@@ -272,7 +285,6 @@ def ask_question(query: str, chat_history=None, k: int = 5):
             if resolved_property_entry:
                 print(f"[DEBUG] PROPERTY_DETAIL: fetched from Pinecone by ID, skipping hybrid search")
 
-    # --- Normal hybrid search (skipped for PROPERTY_DETAIL when ID is resolved) ---
     if resolved_property_entry is None:
         raw_results = hybrid_search(
             query=standalone_query,
@@ -343,7 +355,7 @@ def ask_question(query: str, chat_history=None, k: int = 5):
         elif intent == "BANK_LOAN":
             docs.append(Document(
                 page_content=(
-                    "⚠️ KHÔNG CÓ DỮ LIỆU GÓI VAY — Hệ thống hiện chưa có tài liệu về các sản phẩm vay ngân hàng.\n"
+                    "KHÔNG CÓ DỮ LIỆU GÓI VAY — Hệ thống hiện chưa có tài liệu về các sản phẩm vay ngân hàng.\n"
                     "TUYỆT ĐỐI KHÔNG tự sáng tác hoặc bịa ra bất kỳ thông tin gói vay nào.\n"
                     "Hãy thông báo lịch sự cho khách rằng hệ thống chưa cập nhật dữ liệu gói vay,\n"
                     "và gợi ý khách liên hệ trực tiếp với ngân hàng hoặc chuyên viên tài chính để được tư vấn chính xác."
@@ -352,16 +364,15 @@ def ask_question(query: str, chat_history=None, k: int = 5):
         elif intent == "LEGAL":
             docs.append(Document(
                 page_content=(
-                    "⚠️ KHÔNG CÓ DỮ LIỆU PHÁP LÝ — Hệ thống hiện chưa có tài liệu pháp luật liên quan đến câu hỏi này.\n"
+                    "KHÔNG CÓ DỮ LIỆU PHÁP LÝ — Hệ thống hiện chưa có tài liệu pháp luật liên quan đến câu hỏi này.\n"
                     "TUYỆT ĐỐI KHÔNG tự bịa ra điều luật, điều khoản, hoặc văn bản pháp quy nào.\n"
-                    "Hãy thông báo lịch sự cho khách rằng hệ thống chưa có dữ liệu pháp lý về vấn đề này,\n"
-                    "và gợi ý khách liên hệ luật sư, văn phòng công chứng, hoặc tra cứu tại vbpl.vn để được tư vấn chính xác."
+                    "Hãy thông báo lịch sự cho khách rằng hệ thống chưa có dữ liệu pháp lý về vấn đề này"
                 )
             ))
         else:
             docs.append(Document(
                 page_content=(
-                    "⚠️ KHÔNG CÓ DỮ LIỆU — Hệ thống không tìm thấy BĐS nào phù hợp với tiêu chí tìm kiếm.\n"
+                    "KHÔNG CÓ DỮ LIỆU — Hệ thống không tìm thấy BĐS nào phù hợp với tiêu chí tìm kiếm.\n"
                     "KHÔNG ĐƯỢC bịa ra bất kỳ BĐS nào.\n"
                     "Hãy thông báo cho người dùng và gợi ý CỤ THỂ:\n"
                     "1. Khu vực lân cận có thể có BĐS phù hợp hơn\n"
@@ -383,7 +394,7 @@ def ask_question(query: str, chat_history=None, k: int = 5):
                 eval_text = pinecone_entry["metadata"]
                 print(f"[DEBUG] Using Pinecone stored text for price evaluation")
 
-        query_eval = price_evaluator.evaluate(eval_text)
+        query_eval = await price_evaluator.evaluate(eval_text)
 
         if query_eval.get("status") != "unknown":
             missing = query_eval.get("missing_fields", [])
@@ -406,10 +417,10 @@ def ask_question(query: str, chat_history=None, k: int = 5):
         print(f"[DEBUG] PROPERTY_DETAIL metadata: {top_metadata}")
 
         if top_metadata:
-            prop_eval = price_evaluator.evaluate_from_metadata(top_metadata)
+            prop_eval = await price_evaluator.evaluate_from_metadata(top_metadata)
         else:
             # Fallback: parse from text (less accurate)
-            prop_eval = price_evaluator.evaluate(docs[0].page_content)
+            prop_eval = await price_evaluator.evaluate(docs[0].page_content)
 
         missing = prop_eval.get("missing_fields", [])
         missing_str = ", ".join(missing) if missing else "Không"
@@ -427,13 +438,11 @@ def ask_question(query: str, chat_history=None, k: int = 5):
         docs.insert(0, Document(page_content=eval_doc_content))
         print(f"[DEBUG] Property detail eval: {eval_doc_content}")
 
-    # 6. Format context into a single string for the prompt
-    # Apply sentinel markers so the LLM can clearly distinguish data presence
     raw_context = "\n\n".join([doc.page_content for doc in docs])
-    has_real_data = bool(enriched_texts)  # True only when retrieval returned actual results
+    has_real_data = bool(enriched_texts)
 
     if intent == "CONSULTATION" and has_real_data:
-        context_str = f"✅ CÓ DỮ LIỆU — Hệ thống tìm được {len(enriched_texts)} BĐS. BẮT BUỘC giới thiệu ít nhất 1 căn.\n\n{raw_context}"
+        context_str = f"CÓ DỮ LIỆU — Hệ thống tìm được {len(enriched_texts)} BĐS. BẮT BUỘC giới thiệu ít nhất 1 căn.\n\n{raw_context}"
     else:
         context_str = raw_context
 
@@ -449,7 +458,7 @@ def ask_question(query: str, chat_history=None, k: int = 5):
         chain = qa_prompt | llm
 
     try:
-        response = chain.invoke({
+        response = await chain.ainvoke({
             "input": query,
             "chat_history": formatted_history,
             "context": context_str,
@@ -476,6 +485,7 @@ def ask_question(query: str, chat_history=None, k: int = 5):
             }
 
         return {
+            "intent": intent,
             "answer": parsed_answer,
             "context": enriched_texts,
         }
@@ -483,6 +493,7 @@ def ask_question(query: str, chat_history=None, k: int = 5):
     except Exception as e:
         print(f"[rag_qa] Error: {e}")
         return {
+            "intent": intent,
             "answer": {
                 "message": "Xin lỗi, tôi gặp sự cố kỹ thuật. Vui lòng thử lại sau.",
                 "properties": []

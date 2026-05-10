@@ -41,12 +41,9 @@ def hybrid_search(
     if not candidates:
         return []
 
-    # 2. BM25 re-score over the candidate pool
     corpus = [doc["text"] for doc in candidates]
     bm25_scores = _bm25_score(query, corpus)
 
-    # 3. Build rank lookup: {doc_index: rank} for each method
-    # Vector ranks: candidates already ordered by Pinecone score (index = rank)
     vector_ranks = {i: i + 1 for i in range(len(candidates))}
 
     # BM25 ranks: sort by BM25 score descending
@@ -60,7 +57,6 @@ def hybrid_search(
         bm25_rank = bm25_ranks.get(i, len(candidates) + 1)
         rrf_scores[i] = 1.0 / (_RRF_K + vector_rank) + 1.0 / (_RRF_K + bm25_rank)
 
-    # 5. Sort by RRF score and take top final_top_k
     sorted_indices = sorted(rrf_scores.keys(), key=lambda i: rrf_scores[i], reverse=True)
     top_indices = sorted_indices[:final_top_k]
 

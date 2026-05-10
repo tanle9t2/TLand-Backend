@@ -1,0 +1,69 @@
+Phân loại yêu cầu của người dùng vào 1 trong 7 loại:
+'MARKET_ANALYSIS': hỏi đắt rẻ, so sánh giá, nhận định thị trường BĐS.
+'BANK_LOAN': hỏi về vay vốn ngân hàng, thiếu tiền, lãi suất.
+'PROPERTY_DETAIL': muốn xem chi tiết về 1 căn cụ thể đã được đề cập (VD: 'chi tiết căn 1', 'cho tui xem thêm căn đó', 'căn thứ 2 thế nào').
+'LEGAL': hỏi về pháp lý đất đai, luật nhà ở, thủ tục mua bán, sổ đỏ/sổ hồng, tranh chấp đất, thuế phí giao dịch BĐS, quy hoạch, hợp đồng, công chứng, quyền sử dụng đất. VD: 'sổ đỏ là gì', 'thủ tục sang tên', 'đặt cọc có rủi ro không', 'đất chưa có sổ mua được không'.
+'OFF_TOPIC': câu hỏi KHÔNG liên quan đến BĐS, hoặc hỏi về khả năng/chức năng của bot, hoặc chào hỏi. VD: 'biết code không', 'bạn có thể làm gì', 'xin chào', 'giải toán giúp tôi', 'thời tiết hôm nay', 'kể chuyện cười'.
+'UNCLEAR': câu hỏi LIÊN QUAN đến BĐS nhưng quá mơ hồ, thiếu thông tin tối thiểu — KHÔNG có khu vực/quận, KHÔNG có khoảng giá, KHÔNG có loại hình cụ thể. VD: 'tôi cần mua nhà', 'tìm nhà giúp tôi', 'có nhà không', 'cần thuê chỗ ở'.
+'CONSULTATION': tìm nhà/căn hộ/đất với đầy đủ ít nhất KHU VỰC và GIÁ/NGÂN SÁCH.
+
+ QUY TẮC QUAN TRỌNG:
+- Luôn ƯU TIÊN "Câu diễn giải có ngữ cảnh" để phân loại. Câu hỏi gốc có thể rất ngắn/mơ hồ (VD: 'Gò vấp', '5 tỷ', 'mua nhà') nhưng câu diễn giải đã chứa đầy đủ ngữ cảnh từ lịch sử hội thoại.
+- Nếu câu diễn giải có đủ KHU VỰC + GIÁ → CONSULTATION, dù câu gốc có vẻ mơ hồ.
+- Phân biệt OFF_TOPIC vs UNCLEAR: OFF_TOPIC = không liên quan BĐS hoặc hỏi về bot. UNCLEAR = liên quan BĐS nhưng thiếu thông tin.
+
+--- VÍ DỤ MINH HỌA (FEW-SHOT EXAMPLES) ---
+
+Câu hỏi gốc: biết code không
+Câu diễn giải: biết code không
+-> OFF_TOPIC
+
+Câu hỏi gốc: bạn có thể làm gì
+Câu diễn giải: bạn có thể làm gì
+-> OFF_TOPIC
+
+Câu hỏi gốc: xin chào
+Câu diễn giải: xin chào
+-> OFF_TOPIC
+
+Câu hỏi gốc: tui ko đủ tiền
+Câu diễn giải: Người dùng không đủ tiền mua nhà 5 tỷ ở Gò Vấp
+-> BANK_LOAN
+
+Câu hỏi gốc: tui mới có 2 tỷ thôi
+Câu diễn giải: Người dùng có vốn tự có 2 tỷ, cần tư vấn phương án vay ngân hàng để bổ sung 3 tỷ còn lại mua nhà 5 tỷ tại Gò Vấp
+-> BANK_LOAN
+
+Câu hỏi gốc: cho tôi vay bao nhiêu được
+Câu diễn giải: Ngân hàng cho vay tối đa bao nhiêu phần trăm giá trị nhà
+-> BANK_LOAN
+
+Câu hỏi gốc: căn số 2 thế nào
+Câu diễn giải: Chi tiết về căn số 2 trong danh sách BĐS đã được giới thiệu
+-> PROPERTY_DETAIL
+
+Câu hỏi gốc: giá vậy có hớ không
+Câu diễn giải: Đánh giá mức giá 5 tỷ cho nhà ở Gò Vấp là đắt hay rẻ so với thị trường
+-> MARKET_ANALYSIS
+
+Câu hỏi gốc: tìm nhà ở quận 9 tầm 3 tỷ
+Câu diễn giải: Tìm nhà tại quận 9 với ngân sách khoảng 3 tỷ
+-> CONSULTATION
+
+Câu hỏi gốc: 5 tỷ
+Câu diễn giải: Tìm nhà tại Gò Vấp với ngân sách khoảng 5 tỷ
+-> CONSULTATION
+
+Câu hỏi gốc: Gò vấp
+Câu diễn giải: Tìm nhà tại Gò Vấp với ngân sách khoảng 5 tỷ
+-> CONSULTATION
+
+Câu hỏi gốc: mua nhà
+Câu diễn giải: Tìm nhà tại Gò Vấp với ngân sách khoảng 5 tỷ để mua
+-> CONSULTATION
+
+Câu hỏi gốc: tôi cần mua nhà
+Câu diễn giải: tôi cần mua nhà
+-> UNCLEAR
+
+Chỉ trả về đúng 1 từ khóa duy nhất.

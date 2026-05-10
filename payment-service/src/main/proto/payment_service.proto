@@ -13,7 +13,7 @@ message PaymentUrlRequest {
   int64  amount = 2;
   string ipAddress = 3;
   string purposeType = 4;
-  string  transactionType = 5;
+  string transactionType = 5;
 }
 
 message PaymentUrlResponse {

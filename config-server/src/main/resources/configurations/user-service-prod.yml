@@ -1,0 +1,42 @@
+# file: user-service.yml (trong config server)
+server:
+  port: 8081
+  servlet:
+    context-path: /user-service
+
+spring:
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 50MB
+  datasource:
+    url: ${DB_USER_SERVICE_URL}
+    username: ${DB_USER_SERVICE_USERNAME}
+    password: ${DB_USER_SERVICE_PASSWORD}
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+
+grpc:
+  client:
+    uploadServiceGrpc:
+      address: "discovery:///upload-service"
+      negotiationType: PLAINTEXT
+  server:
+    port: 9191
+    enable-reflection: true
+
+keycloak:
+  auth-server-url: ${KEYCLOAK_BASE_URL}
+  realm: ${KEYCLOAK_REALM}
+  admin:
+    client-id: ${KEYCLOAK_REALM_ID}
+    username: ${KEYCLOAK_REALM_USERNAME}
+    password: ${KEYCLOAK_REALM_PASSWORD}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/

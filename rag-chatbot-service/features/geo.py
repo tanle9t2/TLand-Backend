@@ -1,4 +1,8 @@
+import time
+from typing import Dict, List
+import urllib.parse
 import pandas as pd
+from dotenv import load_dotenv
 from tqdm import tqdm
 import os
 
@@ -7,6 +11,10 @@ from features.feature_engineering import build_features
 from utils.helper import get_data_path, get_project_root
 
 import requests
+
+load_dotenv()
+
+GOONG_API_KEY = os.getenv("GOONG_API_KEY")
 
 
 def append_csv(df, path):
@@ -28,6 +36,11 @@ def osm_geocode(address):
     }
     try:
         r = requests.get(url, params=params, headers=headers, timeout=5)
+        if r.status_code == 429:
+            print("Rate limit, sleep...")
+            time.sleep(5)
+            return None
+
         if r.status_code == 200:
             data = r.json()
             if len(data) > 0:
@@ -36,6 +49,39 @@ def osm_geocode(address):
                 return lat, lng
         else:
             print("Status:", r.status_code)
+
+    except Exception as e:
+        print("Error:", e)
+
+    return None, None
+
+
+def goong_geocode(address):
+    url = "https://rsapi.goong.io/geocode"
+
+    params = {
+        "address": address,
+        "api_key": GOONG_API_KEY
+    }
+
+    try:
+        r = requests.get(url, params=params, timeout=5)
+
+        if r.status_code == 200:
+            data = r.json()
+
+            if data.get("results") and len(data["results"]) > 0:
+                location = data["results"][0]["geometry"]["location"]
+                lat = float(location["lat"])
+                lng = float(location["lng"])
+                return lat, lng
+            else:
+                print("No results")
+                return None, None
+
+        else:
+            print("Status:", r.status_code)
+            print(r.text)
 
     except Exception as e:
         print("Error:", e)
@@ -135,15 +181,89 @@ def filter_hcm_data(dataset):
     return dataset_hcm
 
 
+def get_nearby_amenities(lat: float, lng: float, radius: int = 1000) -> Dict[str, List[dict]]:
+    categories = {
+        "schools": '[amenity=school]',
+        "hospitals": '[amenity=hospital]',
+        "supermarkets": '[shop=supermarket]',
+        "parks": '[leisure=park]',
+        "gyms": '[leisure=fitness_centre]',
+    }
+
+    query_parts = [
+        f'node(around:{radius},{lat},{lng}){tag};'
+        for tag in categories.values()
+    ]
+
+    query = f"""
+[out:json];
+(
+{''.join(query_parts)}
+);
+out body;
+"""
+
+    encoded_data = urllib.parse.urlencode({"data": query})
+
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Accept": "application/json",
+        "User-Agent": "MyApp/1.0 (fcletan12@gmail.com)",
+    }
+
+    response = requests.post(
+        "https://overpass-api.de/api/interpreter",
+        data=encoded_data,
+        headers=headers,
+        timeout=30
+    )
+
+    response.raise_for_status()
+    data = response.json()
+
+    results = {key: [] for key in categories.keys()}
+
+    reverse_mapping = {
+        "school": "schools",
+        "hospital": "hospitals",
+        "bank": "banks",
+        "supermarket": "supermarkets",
+        "park": "parks",
+        "fitness_centre": "gyms",
+    }
+
+    for place in data.get("elements", []):
+        tags = place.get("tags", {})
+
+        amenity_type = (
+                tags.get("amenity")
+                or tags.get("shop")
+                or tags.get("leisure")
+                or tags.get("highway")
+        )
+
+        category = reverse_mapping.get(amenity_type)
+
+        if not category:
+            continue
+
+        results[category].append({
+            "name": tags.get("name", "Unknown"),
+            "type": amenity_type,
+        })
+
+    return results
+
+
 if __name__ == "__main__":
-    input_path = get_data_path("ho_chi_minh_pricing_new.csv")
+    input_path = get_data_path("hcm_nha.csv")
     # "nhatot.csv"
     # "ho_chi_minh_pricing" "vietnam_housing_dataset"
     df = pd.read_csv(input_path)
 
     df_hcm = get_geo_data(df)
 
-    output_path = get_data_path("final_data.csv")
+    output_path = get_data_path("hcm_nha_geo.csv")
     append_csv(df_hcm, output_path)
 
     print(f"💾 Data appended to: {output_path}")

@@ -2,6 +2,6 @@ spring:
   config:
     import:
       - optional:file:.env[.properties]
-      - optional:configserver:http://config-server:8888
+      - optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
   application:
     name: asset-service

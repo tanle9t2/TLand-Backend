@@ -1,0 +1,65 @@
+# file: user-service.yml (trong config server)
+server:
+  port: 8082
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 50MB
+    context-path: /asset-service
+
+
+spring:
+  cloud:
+    discovery:
+      enabled: true
+  data:
+    mongodb:
+      uri: ${MONGO_DB_URI}
+
+
+grpc:
+  client:
+    userServiceGrpc:
+      address: "discovery:///user-service"
+      negotiationType: PLAINTEXT
+    postServiceGrpc:
+      address: "discovery:///post-service"
+      negotiationType: PLAINTEXT
+    uploadServiceGrpc:
+      address: "discovery:///upload-service"
+      negotiationType: PLAINTEXT
+  server:
+    port: 9193
+    enable-reflection: true
+
+resilience4j:
+  retry:
+    retryAspectOrder: 1
+    instances:
+      postServiceRetry:
+        maxAttempts: 3
+        waitDuration: 500ms
+
+  circuitbreaker:
+    circuitBreakerAspectOrder: 2
+    instances:
+      postServiceCB:
+        registerHealthIndicator: true
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s
+
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/

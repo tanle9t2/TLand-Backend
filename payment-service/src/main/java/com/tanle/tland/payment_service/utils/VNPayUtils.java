@@ -2,6 +2,8 @@ package com.tanle.tland.payment_service.utils;
 
 import com.tanle.tland.payment_service.entity.PurposeType;
 import com.tanle.tland.payment_service.entity.TransactionType;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
@@ -15,6 +17,7 @@ import java.util.Collections;
 import java.util.Map;
 
 @Component
+@Slf4j
 public class VNPayUtils {
 
     @Value(value = "${payment.vnpay.secret-key}")
@@ -38,6 +41,7 @@ public class VNPayUtils {
         while (itr.hasNext()) {
             var fieldName = itr.next();
             var fieldValue = params.get(fieldName);
+            log.info("Field verify: {} value {}", fieldName, fieldValue);
             if ((fieldValue != null) && (!fieldValue.isEmpty())) {
                 //Build hash data
                 hashPayload.append(fieldName);
@@ -51,6 +55,7 @@ public class VNPayUtils {
         }
 
         var secureHash = hmacSHA512(secretKey, hashPayload.toString());
+        log.info("secureHash: {}. reqSecureHash: {}", secureHash, reqSecureHash);
         return secureHash.equals(reqSecureHash);
     }
 
@@ -136,5 +141,18 @@ public class VNPayUtils {
     @Value("${payment.vnpay.return-url}")
     public void setReturnUrlFormat(String returnUrlFormat) {
         VNPayUtils.returnUrlFormat = returnUrlFormat;
+    }
+
+    public static String getIpAddress(HttpServletRequest request) {
+        String ipAdress;
+        try {
+            ipAdress = request.getHeader("X-FORWARDED-FOR");
+            if (ipAdress == null) {
+                ipAdress = request.getRemoteAddr();
+            }
+        } catch (Exception e) {
+            ipAdress = "Invalid IP:" + e.getMessage();
+        }
+        return ipAdress;
     }
 }

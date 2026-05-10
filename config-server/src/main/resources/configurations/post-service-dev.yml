@@ -1,0 +1,90 @@
+# file: user-service.yml (trong config server)
+server:
+  port: 8099
+  servlet:
+    context-path: /post-service
+
+spring:
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 100MB
+      max-request-size: 50MB
+  datasource:
+    url: ${POST_DB_URL}
+    username: ${POST_DB_USER}
+    password: ${POST_DB_PASSWORD}
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+  kafka:
+    producer:
+      bootstrap-servers: ${KAFKA_SERVER}
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    #      properties:
+    #        spring.json.type.mapping: orderEvent:com.tanle.order_service.event.OrderEvent
+
+    consumer:
+      group-id: tland-post
+      bootstrap-servers: ${KAFKA_SERVER}
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
+        spring.json.trusted.packages: "*"
+        spring.json.type.mapping: paymentEvent:com.tanle.tland.post_service.event.PaymentEvent
+      auto-offset-reset: earliest
+
+
+grpc:
+  client:
+    assetServiceGrpc:
+      address: "discovery:///asset-service"
+      negotiationType: PLAINTEXT
+    userServiceGrpc:
+      address: "discovery:///user-service"
+      negotiationType: PLAINTEXT
+    paymentServiceGrpc:
+      address: "discovery:///payment-service"
+      negotiationType: PLAINTEXT
+
+  server:
+    port: 9194
+    enable-reflection: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userServiceCB:
+        registerHealthIndicator: true
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s
+      assetServiceCB:
+        registerHealthIndicator: true
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 3
+        failureRateThreshold: 50
+        waitDurationInOpenState: 5s
+
+  retry:
+    instances:
+      userServiceRetry:
+        maxAttempts: 3
+        waitDuration: 500ms
+      assetServiceRetry:
+        maxAttempts: 3
+        waitDuration: 500ms
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
